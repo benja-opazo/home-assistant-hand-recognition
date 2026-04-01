@@ -19,22 +19,8 @@ ports:
 ports_description:
   8099/tcp: Web UI for configuration
 options:
-  mqtt_host: homeassistant.local
-  mqtt_port: 1883
-  mqtt_username: ""
-  mqtt_password: ""
-  frigate_url: http://homeassistant.local:5000
-  score_threshold: 0.7
-  output_topic_template: "hand-recognition/{camera}"
   web_ui_port: 8099
   max_snapshots: 10
 schema:
-  mqtt_host: str
-  mqtt_port: int
-  mqtt_username: str
-  mqtt_password: str
-  frigate_url: str
-  score_threshold: float
-  output_topic_template: str
   web_ui_port: int
   max_snapshots: int
