@@ -1,6 +1,10 @@
+import logging
+
 from flask import Flask, render_template, request, jsonify
 
 from config import load_config, save_config
+
+logger = logging.getLogger(__name__)
 
 
 class _ReverseProxied:
@@ -31,43 +35,56 @@ def create_app(config: dict) -> Flask:
 
     @app.get("/")
     def index():
-        cfg = load_config()
+        try:
+            cfg = load_config()
+        except Exception as e:
+            logger.error("Failed to load config: %s", e)
+            cfg = {}
         return render_template("index.html", config=cfg)
 
     @app.post("/api/config")
     def update_config():
-        data = request.get_json(force=True)
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
+        try:
+            data = request.get_json(force=True)
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
 
-        cfg = load_config()
+            cfg = load_config()
 
-        str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url", "output_topic_template"]
-        int_fields = ["mqtt_port", "web_ui_port"]
-        float_fields = ["score_threshold"]
+            str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url", "output_topic_template"]
+            int_fields = ["mqtt_port", "web_ui_port"]
+            float_fields = ["score_threshold"]
 
-        for field in str_fields:
-            if field in data:
-                cfg[field] = str(data[field])
-        for field in int_fields:
-            if field in data:
-                try:
-                    cfg[field] = int(data[field])
-                except (ValueError, TypeError):
-                    return jsonify({"error": f"Invalid value for {field}"}), 400
-        for field in float_fields:
-            if field in data:
-                try:
-                    cfg[field] = float(data[field])
-                except (ValueError, TypeError):
-                    return jsonify({"error": f"Invalid value for {field}"}), 400
+            for field in str_fields:
+                if field in data:
+                    cfg[field] = str(data[field])
+            for field in int_fields:
+                if field in data:
+                    try:
+                        cfg[field] = int(data[field])
+                    except (ValueError, TypeError):
+                        return jsonify({"error": f"Invalid value for {field}"}), 400
+            for field in float_fields:
+                if field in data:
+                    try:
+                        cfg[field] = float(data[field])
+                    except (ValueError, TypeError):
+                        return jsonify({"error": f"Invalid value for {field}"}), 400
 
-        save_config(cfg)
-        app.config["current_config"] = cfg
-        return jsonify({"status": "ok"})
+            save_config(cfg)
+            app.config["current_config"] = cfg
+            return jsonify({"status": "ok"})
+
+        except Exception as e:
+            logger.error("Failed to save config: %s", e)
+            return jsonify({"error": str(e)}), 500
 
     @app.get("/api/config")
     def get_config():
-        return jsonify(load_config())
+        try:
+            return jsonify(load_config())
+        except Exception as e:
+            logger.error("Failed to load config: %s", e)
+            return jsonify({"error": str(e)}), 500
 
     return app
