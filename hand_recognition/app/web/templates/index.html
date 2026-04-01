@@ -169,6 +169,9 @@
   </div>
 
   <script>
+    // Use the URL Flask generated (respects the HA ingress SCRIPT_NAME prefix).
+    const CONFIG_API_URL = {{ url_for('update_config') | tojson }};
+
     document.getElementById("config-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const status = document.getElementById("status");
@@ -183,7 +186,7 @@
       status.className = "";
 
       try {
-        const res = await fetch("/api/config", {
+        const res = await fetch(CONFIG_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
