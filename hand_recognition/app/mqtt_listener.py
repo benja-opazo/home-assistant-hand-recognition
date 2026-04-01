@@ -1,6 +1,7 @@
 import json
 import logging
 import paho.mqtt.client as mqtt
+import yaml
 
 from frigate_client import FrigateClient
 from hand_recognizer import HandRecognizer
@@ -54,20 +55,29 @@ class MQTTListener:
     def _on_message(self, client, userdata, msg):
         try:
             raw = msg.payload.decode()
-            payload = json.loads(raw)
         except UnicodeDecodeError as e:
             logger.warning(
                 "Could not decode MQTT message on topic '%s': %s | raw bytes: %s",
                 msg.topic, e, msg.payload,
             )
             return
-        except json.JSONDecodeError as e:
-            logger.warning(
-                "Could not parse MQTT message on topic '%s' as JSON: %s\n"
-                "Raw payload: %s",
-                msg.topic, e, raw,
-            )
-            return
+
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            # Some Frigate topics (e.g. tracked_object_update) publish YAML instead of JSON
+            try:
+                payload = yaml.safe_load(raw)
+                if not isinstance(payload, dict):
+                    raise ValueError(f"Expected a mapping, got {type(payload).__name__}")
+                logger.debug("Parsed message on topic '%s' as YAML", msg.topic)
+            except Exception as e:
+                logger.warning(
+                    "Could not parse MQTT message on topic '%s' as JSON or YAML: %s\n"
+                    "Raw payload: %s",
+                    msg.topic, e, raw,
+                )
+                return
 
         # Apply every configured filter — all must pass
         for f in self._config.get("topic_filters", []):
