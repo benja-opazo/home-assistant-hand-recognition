@@ -6,14 +6,20 @@ import threading
 from config import load_config
 from frigate_client import FrigateClient
 from hand_recognizer import HandRecognizer
+from log_handler import InMemoryLogHandler
 from mqtt_listener import MQTTListener
 from mqtt_publisher import MQTTPublisher
 from web.server import create_app
+
+log_handler = InMemoryLogHandler()
+log_handler.setLevel(logging.DEBUG)
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
+logging.getLogger().addHandler(log_handler)
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,12 +35,13 @@ def main():
 
     listener.start()
 
-    flask_app = create_app(config)
+    flask_app = create_app(config, log_handler)
     web_thread = threading.Thread(
         target=lambda: flask_app.run(
             host="0.0.0.0",
             port=config["web_ui_port"],
             use_reloader=False,
+            threaded=True,
         ),
         daemon=True,
     )

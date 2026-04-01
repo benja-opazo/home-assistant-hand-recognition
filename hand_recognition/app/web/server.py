@@ -1,8 +1,10 @@
+import json
 import logging
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, Response, render_template, request, jsonify
 
 from config import load_config, save_config
+from log_handler import InMemoryLogHandler
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +30,14 @@ class _ReverseProxied:
         return self.app(environ, start_response)
 
 
-def create_app(config: dict) -> Flask:
+def create_app(config: dict, log_handler: InMemoryLogHandler) -> Flask:
     app = Flask(__name__, template_folder="templates")
     app.wsgi_app = _ReverseProxied(app.wsgi_app)
     app.config["current_config"] = config
+
+    # ------------------------------------------------------------------ #
+    #  Config routes                                                       #
+    # ------------------------------------------------------------------ #
 
     @app.get("/")
     def index():
@@ -86,5 +92,47 @@ def create_app(config: dict) -> Flask:
         except Exception as e:
             logger.error("Failed to load config: %s", e)
             return jsonify({"error": str(e)}), 500
+
+    # ------------------------------------------------------------------ #
+    #  Log routes                                                          #
+    # ------------------------------------------------------------------ #
+
+    @app.get("/api/logs")
+    def get_logs():
+        return jsonify(log_handler.get_records())
+
+    @app.delete("/api/logs")
+    def clear_logs():
+        log_handler.clear()
+        return jsonify({"status": "ok"})
+
+    @app.get("/api/logs/stream")
+    def stream_logs():
+        def generate():
+            # Send all buffered entries first
+            for entry in log_handler.get_records():
+                yield f"data: {json.dumps(entry)}\n\n"
+
+            # Then stream new entries as they arrive
+            q = log_handler.subscribe()
+            try:
+                while True:
+                    try:
+                        entry = q.get(timeout=15)
+                        yield f"data: {json.dumps(entry)}\n\n"
+                    except Exception:
+                        # Timeout — send a keepalive comment to prevent proxy closing
+                        yield ": keepalive\n\n"
+            finally:
+                log_handler.unsubscribe(q)
+
+        return Response(
+            generate(),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",   # prevent nginx/HA proxy from buffering
+            },
+        )
 
     return app

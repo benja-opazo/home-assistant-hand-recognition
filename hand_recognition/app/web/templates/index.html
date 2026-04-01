@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hand Recognition — Configuration</title>
+  <title>Hand Recognition</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -13,11 +13,44 @@
       color: #e6edf3;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
       padding: 2rem;
     }
 
+    /* ── Tabs ─────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid #30363d;
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-bottom: -1px;
+      padding: 0.5rem 1.25rem;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab-btn:hover { color: #e6edf3; }
+
+    .tab-btn.active {
+      border-bottom-color: #58a6ff;
+      color: #58a6ff;
+    }
+
+    .tab-content { display: none; width: 100%; max-width: 860px; }
+    .tab-content.active { display: block; }
+
+    /* ── Card (shared) ────────────────────────────────────── */
     .card {
       background: #161b22;
       border: 1px solid #30363d;
@@ -55,10 +88,7 @@
       margin-bottom: 1rem;
     }
 
-    label {
-      font-size: 0.85rem;
-      color: #c9d1d9;
-    }
+    label { font-size: 0.85rem; color: #c9d1d9; }
 
     input {
       background: #0d1117;
@@ -71,17 +101,11 @@
       transition: border-color 0.15s;
     }
 
-    input:focus {
-      outline: none;
-      border-color: #58a6ff;
-    }
+    input:focus { outline: none; border-color: #58a6ff; }
 
-    .hint {
-      font-size: 0.75rem;
-      color: #8b949e;
-    }
+    .hint { font-size: 0.75rem; color: #8b949e; }
 
-    button {
+    button.primary {
       margin-top: 1.5rem;
       width: 100%;
       background: #238636;
@@ -93,8 +117,7 @@
       padding: 0.65rem;
       transition: background 0.15s;
     }
-
-    button:hover { background: #2ea043; }
+    button.primary:hover { background: #2ea043; }
 
     #status {
       margin-top: 0.75rem;
@@ -104,106 +127,404 @@
     }
     .ok  { color: #3fb950; }
     .err { color: #f85149; }
+
+    /* ── Logs tab ─────────────────────────────────────────── */
+    .logs-panel {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 10rem);
+      overflow: hidden;
+    }
+
+    .logs-toolbar {
+      align-items: center;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+    }
+
+    .filter-group {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .filter-label {
+      color: #8b949e;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-right: 0.2rem;
+    }
+
+    .level-badge {
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 2px 7px;
+      user-select: none;
+      opacity: 0.4;
+      transition: opacity 0.15s;
+    }
+    .level-badge.active { opacity: 1; }
+    .level-badge.DEBUG   { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+    .level-badge.INFO    { background: #0d419d; color: #58a6ff; border: 1px solid #1f6feb; }
+    .level-badge.WARNING { background: #4d2d00; color: #e3b341; border: 1px solid #9e6a03; }
+    .level-badge.ERROR   { background: #490202; color: #f85149; border: 1px solid #b91c1c; }
+    .level-badge.CRITICAL{ background: #490202; color: #f85149; border: 1px solid #b91c1c; }
+
+    #source-filter {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      font-size: 0.82rem;
+      padding: 3px 8px;
+    }
+
+    .log-actions { display: flex; gap: 0.4rem; margin-left: auto; }
+
+    .action-btn {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 4px 12px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .action-btn:hover { background: #30363d; color: #e6edf3; }
+    .action-btn.active { background: #1f6feb; border-color: #388bfd; color: #fff; }
+    .action-btn.danger:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
+
+    #log-container {
+      flex: 1;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      overflow-y: auto;
+      padding: 0.5rem 0;
+    }
+
+    .log-entry {
+      display: flex;
+      gap: 0.6rem;
+      padding: 1px 1rem;
+      border-left: 2px solid transparent;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .log-entry:hover { background: #1c2128; }
+    .log-entry.DEBUG   { border-left-color: #30363d; }
+    .log-entry.INFO    { border-left-color: #1f6feb; }
+    .log-entry.WARNING { border-left-color: #9e6a03; }
+    .log-entry.ERROR   { border-left-color: #b91c1c; }
+    .log-entry.CRITICAL{ border-left-color: #b91c1c; }
+
+    .log-ts   { color: #484f58; flex-shrink: 0; }
+    .log-lvl  { flex-shrink: 0; font-weight: 700; width: 4.5rem; }
+    .log-src  { color: #8b949e; flex-shrink: 0; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; }
+    .log-msg  { color: #e6edf3; flex: 1; }
+
+    .log-entry.DEBUG   .log-lvl { color: #8b949e; }
+    .log-entry.INFO    .log-lvl { color: #58a6ff; }
+    .log-entry.WARNING .log-lvl { color: #e3b341; }
+    .log-entry.ERROR   .log-lvl { color: #f85149; }
+    .log-entry.CRITICAL .log-lvl { color: #f85149; }
+
+    .log-status {
+      color: #484f58;
+      font-size: 0.75rem;
+      padding: 0.4rem 1rem;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Hand Recognition</h1>
-    <p class="subtitle">Add-on configuration — changes are saved to <code>/data/config.yaml</code></p>
 
-    <form id="config-form">
-      <p class="section-title">MQTT Broker</p>
+  <!-- Tab bar -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="config">Configuration</button>
+    <button class="tab-btn"        data-tab="logs">Logs</button>
+  </div>
 
-      <div class="field">
-        <label for="mqtt_host">Host</label>
-        <input id="mqtt_host" name="mqtt_host" type="text" value="{{ config.mqtt_host }}" />
+  <!-- ── Configuration tab ──────────────────────────────────────── -->
+  <div id="tab-config" class="tab-content active">
+    <div class="card">
+      <h1>Hand Recognition</h1>
+      <p class="subtitle">Add-on configuration — changes are saved to <code>/data/config.yaml</code></p>
+
+      <form id="config-form">
+        <p class="section-title">MQTT Broker</p>
+
+        <div class="field">
+          <label for="mqtt_host">Host</label>
+          <input id="mqtt_host" name="mqtt_host" type="text" value="{{ config.mqtt_host }}" />
+        </div>
+        <div class="field">
+          <label for="mqtt_port">Port</label>
+          <input id="mqtt_port" name="mqtt_port" type="number" value="{{ config.mqtt_port }}" />
+        </div>
+        <div class="field">
+          <label for="mqtt_username">Username</label>
+          <input id="mqtt_username" name="mqtt_username" type="text" value="{{ config.mqtt_username }}" />
+        </div>
+        <div class="field">
+          <label for="mqtt_password">Password</label>
+          <input id="mqtt_password" name="mqtt_password" type="password" value="{{ config.mqtt_password }}" />
+        </div>
+
+        <p class="section-title">Frigate</p>
+
+        <div class="field">
+          <label for="frigate_url">Base URL</label>
+          <input id="frigate_url" name="frigate_url" type="text" value="{{ config.frigate_url }}" />
+        </div>
+        <div class="field">
+          <label for="score_threshold">Detection score threshold</label>
+          <input id="score_threshold" name="score_threshold" type="number" step="0.05" min="0" max="1" value="{{ config.score_threshold }}" />
+          <span class="hint">Events with a score below this value are ignored (0 – 1).</span>
+        </div>
+
+        <p class="section-title">Output</p>
+
+        <div class="field">
+          <label for="output_topic_template">MQTT topic template</label>
+          <input id="output_topic_template" name="output_topic_template" type="text" value="{{ config.output_topic_template }}" />
+          <span class="hint">Use <code>{camera}</code> as a placeholder for the camera name.</span>
+        </div>
+
+        <p class="section-title">Web UI</p>
+
+        <div class="field">
+          <label for="web_ui_port">Port</label>
+          <input id="web_ui_port" name="web_ui_port" type="number" value="{{ config.web_ui_port }}" />
+          <span class="hint">Restart the add-on after changing this.</span>
+        </div>
+
+        <button type="submit" class="primary">Save configuration</button>
+        <p id="status"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Logs tab ───────────────────────────────────────────────── -->
+  <div id="tab-logs" class="tab-content">
+    <div class="logs-panel">
+      <div class="logs-toolbar">
+        <!-- Severity filter -->
+        <div class="filter-group">
+          <span class="filter-label">Level</span>
+          <span class="level-badge DEBUG   active" data-level="DEBUG">DEBUG</span>
+          <span class="level-badge INFO    active" data-level="INFO">INFO</span>
+          <span class="level-badge WARNING active" data-level="WARNING">WARNING</span>
+          <span class="level-badge ERROR   active" data-level="ERROR">ERROR</span>
+        </div>
+
+        <!-- Source filter -->
+        <div class="filter-group">
+          <span class="filter-label">Source</span>
+          <select id="source-filter">
+            <option value="">All sources</option>
+          </select>
+        </div>
+
+        <!-- Actions -->
+        <div class="log-actions">
+          <button class="action-btn" id="btn-pause">Pause</button>
+          <button class="action-btn danger" id="btn-clear">Clear</button>
+          <button class="action-btn" id="btn-download">Download</button>
+        </div>
       </div>
 
-      <div class="field">
-        <label for="mqtt_port">Port</label>
-        <input id="mqtt_port" name="mqtt_port" type="number" value="{{ config.mqtt_port }}" />
-      </div>
-
-      <div class="field">
-        <label for="mqtt_username">Username</label>
-        <input id="mqtt_username" name="mqtt_username" type="text" value="{{ config.mqtt_username }}" />
-      </div>
-
-      <div class="field">
-        <label for="mqtt_password">Password</label>
-        <input id="mqtt_password" name="mqtt_password" type="password" value="{{ config.mqtt_password }}" />
-      </div>
-
-      <p class="section-title">Frigate</p>
-
-      <div class="field">
-        <label for="frigate_url">Base URL</label>
-        <input id="frigate_url" name="frigate_url" type="text" value="{{ config.frigate_url }}" />
-      </div>
-
-      <div class="field">
-        <label for="score_threshold">Detection score threshold</label>
-        <input id="score_threshold" name="score_threshold" type="number" step="0.05" min="0" max="1" value="{{ config.score_threshold }}" />
-        <span class="hint">Events with a score below this value are ignored (0 – 1).</span>
-      </div>
-
-      <p class="section-title">Output</p>
-
-      <div class="field">
-        <label for="output_topic_template">MQTT topic template</label>
-        <input id="output_topic_template" name="output_topic_template" type="text" value="{{ config.output_topic_template }}" />
-        <span class="hint">Use <code>{camera}</code> as a placeholder for the camera name.</span>
-      </div>
-
-      <p class="section-title">Web UI</p>
-
-      <div class="field">
-        <label for="web_ui_port">Port</label>
-        <input id="web_ui_port" name="web_ui_port" type="number" value="{{ config.web_ui_port }}" />
-        <span class="hint">Restart the add-on after changing this.</span>
-      </div>
-
-      <button type="submit">Save configuration</button>
-      <p id="status"></p>
-    </form>
+      <div id="log-container"></div>
+      <div class="log-status" id="log-status">Connecting…</div>
+    </div>
   </div>
 
   <script>
-    // Use the URL Flask generated (respects the HA ingress SCRIPT_NAME prefix).
-    const CONFIG_API_URL = {{ url_for('update_config') | tojson }};
+    // ── API URLs (respects HA ingress prefix via Flask url_for) ─────────
+    const URL_CONFIG     = {{ url_for('update_config')  | tojson }};
+    const URL_LOGS       = {{ url_for('get_logs')       | tojson }};
+    const URL_LOGS_CLEAR = {{ url_for('clear_logs')     | tojson }};
+    const URL_LOGS_STREAM= {{ url_for('stream_logs')    | tojson }};
 
+    // ── Tab switching ────────────────────────────────────────────────────
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    // ── Config form ──────────────────────────────────────────────────────
     document.getElementById("config-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const status = document.getElementById("status");
-      const form = e.target;
-      const data = Object.fromEntries(new FormData(form).entries());
-
-      // Coerce numeric fields
+      const data = Object.fromEntries(new FormData(e.target).entries());
       ["mqtt_port", "web_ui_port"].forEach(k => { data[k] = parseInt(data[k], 10); });
       data["score_threshold"] = parseFloat(data["score_threshold"]);
-
       status.textContent = "Saving…";
       status.className = "";
-
       try {
-        const res = await fetch(CONFIG_API_URL, {
+        const res = await fetch(URL_CONFIG, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         });
         const json = await res.json();
-        if (res.ok) {
-          status.textContent = "Configuration saved.";
-          status.className = "ok";
-        } else {
-          status.textContent = "Error: " + (json.error || res.statusText);
-          status.className = "err";
-        }
+        if (res.ok) { status.textContent = "Configuration saved."; status.className = "ok"; }
+        else        { status.textContent = "Error: " + (json.error || res.statusText); status.className = "err"; }
       } catch (err) {
         status.textContent = "Network error: " + err.message;
         status.className = "err";
       }
     });
+
+    // ── Logs ─────────────────────────────────────────────────────────────
+    const logContainer  = document.getElementById("log-container");
+    const logStatus     = document.getElementById("log-status");
+    const sourceFilter  = document.getElementById("source-filter");
+
+    let paused        = false;
+    let activeLevels  = new Set(["DEBUG","INFO","WARNING","ERROR","CRITICAL"]);
+    let activeSource  = "";
+    let allEntries    = [];   // full buffer for download / re-render
+    let knownSources  = new Set();
+    let entryCount    = 0;
+
+    // Level badge toggles
+    document.querySelectorAll(".level-badge").forEach(badge => {
+      badge.addEventListener("click", () => {
+        const lvl = badge.dataset.level;
+        if (activeLevels.has(lvl)) { activeLevels.delete(lvl); badge.classList.remove("active"); }
+        else                       { activeLevels.add(lvl);    badge.classList.add("active"); }
+        rerenderLogs();
+      });
+    });
+
+    sourceFilter.addEventListener("change", () => {
+      activeSource = sourceFilter.value;
+      rerenderLogs();
+    });
+
+    function matchesFilters(entry) {
+      if (!activeLevels.has(entry.level))                        return false;
+      if (activeSource && entry.source !== activeSource)         return false;
+      return true;
+    }
+
+    function makeRow(entry) {
+      const row = document.createElement("div");
+      row.className = `log-entry ${entry.level}`;
+      row.dataset.id = entry.id;
+      row.innerHTML =
+        `<span class="log-ts">${entry.timestamp.slice(11)}</span>` +
+        `<span class="log-lvl">${entry.level}</span>` +
+        `<span class="log-src" title="${entry.source}">${entry.source}</span>` +
+        `<span class="log-msg">${escHtml(entry.message)}</span>`;
+      return row;
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    function rerenderLogs() {
+      logContainer.innerHTML = "";
+      allEntries.filter(matchesFilters).forEach(e => logContainer.appendChild(makeRow(e)));
+      if (!paused) scrollBottom();
+    }
+
+    function appendEntry(entry) {
+      allEntries.push(entry);
+
+      // Track sources for the dropdown
+      if (!knownSources.has(entry.source)) {
+        knownSources.add(entry.source);
+        const opt = document.createElement("option");
+        opt.value = entry.source;
+        opt.textContent = entry.source;
+        sourceFilter.appendChild(opt);
+      }
+
+      if (!matchesFilters(entry)) return;
+      logContainer.appendChild(makeRow(entry));
+      entryCount++;
+      if (!paused) scrollBottom();
+      logStatus.textContent = `${entryCount} entries`;
+    }
+
+    function scrollBottom() {
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    // Pause / resume
+    document.getElementById("btn-pause").addEventListener("click", function () {
+      paused = !paused;
+      this.textContent = paused ? "Resume" : "Pause";
+      this.classList.toggle("active", paused);
+      if (!paused) scrollBottom();
+    });
+
+    // Clear
+    document.getElementById("btn-clear").addEventListener("click", async () => {
+      await fetch(URL_LOGS_CLEAR, { method: "DELETE" });
+      allEntries = [];
+      knownSources.clear();
+      entryCount = 0;
+      logContainer.innerHTML = "";
+      // Reset source dropdown
+      sourceFilter.innerHTML = '<option value="">All sources</option>';
+      activeSource = "";
+      logStatus.textContent = "Cleared";
+    });
+
+    // Download
+    document.getElementById("btn-download").addEventListener("click", () => {
+      const lines = allEntries
+        .filter(matchesFilters)
+        .map(e => `${e.timestamp} [${e.level}] ${e.source}: ${e.message}`)
+        .join("\n");
+      const blob = new Blob([lines], { type: "text/plain" });
+      const a    = document.createElement("a");
+      a.href     = URL.createObjectURL(blob);
+      a.download = `hand-recognition-${new Date().toISOString().slice(0,19).replace(/:/g,"-")}.log`;
+      a.click();
+    });
+
+    // SSE stream
+    function connectStream() {
+      logStatus.textContent = "Connecting…";
+      const es = new EventSource(URL_LOGS_STREAM);
+
+      es.onopen = () => { logStatus.textContent = `${entryCount} entries`; };
+
+      es.onmessage = (e) => {
+        try { appendEntry(JSON.parse(e.data)); }
+        catch (_) {}
+      };
+
+      es.onerror = () => {
+        logStatus.textContent = "Disconnected — reconnecting in 3 s…";
+        es.close();
+        setTimeout(connectStream, 3000);
+      };
+    }
+
+    connectStream();
   </script>
 </body>
 </html>
