@@ -1,8 +1,7 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.21
-
-# Stage 1: install Python packages on a glibc-based image so that
-# manylinux wheels (mediapipe, opencv) can be resolved and installed.
-FROM python:3.12-slim AS python-builder
+# BUILD_FROM is passed by HA's builder; declared here to avoid warnings but
+# we use python:3.12-slim directly so mediapipe/numpy glibc wheels work.
+ARG BUILD_FROM=python:3.12-slim
+FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
@@ -13,16 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Stage 2: runtime on the HA Alpine base image.
-# gcompat provides glibc ABI compatibility so the manylinux binaries
-# copied from stage 1 can run on musl libc.
-FROM $BUILD_FROM
-
-RUN apk add --no-cache gcompat libstdc++ glib mesa-gl
-
 WORKDIR /app
-
-COPY --from=python-builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 
 COPY app/ .
 
