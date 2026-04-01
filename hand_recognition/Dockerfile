@@ -1,17 +1,13 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.21
+ARG BUILD_FROM=python:3.12-slim
 FROM $BUILD_FROM
 
 WORKDIR /app
 
-# Install system dependencies for MediaPipe and OpenCV
-RUN apk add --no-cache \
-    libstdc++ \
-    libgcc \
-    glib \
-    mesa-gl \
-    jpeg-dev \
-    zlib-dev \
-    && rm -rf /var/cache/apk/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libgl1 \
+    libjpeg-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
