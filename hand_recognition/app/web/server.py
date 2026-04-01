@@ -53,9 +53,9 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
 
             cfg = load_config()
 
-            str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url", "output_topic_template"]
+            str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url",
+                          "output_topic_template", "mqtt_topic"]
             int_fields = ["mqtt_port", "web_ui_port", "max_snapshots"]
-            float_fields = ["score_threshold"]
 
             for field in str_fields:
                 if field in data:
@@ -66,12 +66,19 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
                         cfg[field] = int(data[field])
                     except (ValueError, TypeError):
                         return jsonify({"error": f"Invalid value for {field}"}), 400
-            for field in float_fields:
-                if field in data:
-                    try:
-                        cfg[field] = float(data[field])
-                    except (ValueError, TypeError):
-                        return jsonify({"error": f"Invalid value for {field}"}), 400
+
+            if "topic_filters" in data:
+                filters = data["topic_filters"]
+                if not isinstance(filters, list):
+                    return jsonify({"error": "topic_filters must be a list"}), 400
+                cfg["topic_filters"] = [
+                    {
+                        "property":   str(f.get("property", "")),
+                        "comparator": str(f.get("comparator", "==")),
+                        "value":      str(f.get("value", "")),
+                    }
+                    for f in filters if isinstance(f, dict)
+                ]
 
             save_config(cfg)
             app.config["current_config"] = cfg

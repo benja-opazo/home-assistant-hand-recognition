@@ -20,38 +20,24 @@
 
     /* ── Tabs ──────────────────────────────────────────────────── */
     .tabs {
-      display: flex;
-      gap: 2px;
-      margin-bottom: 1.5rem;
-      border-bottom: 1px solid #30363d;
-      width: 100%;
-      max-width: 960px;
+      display: flex; gap: 2px; margin-bottom: 1.5rem;
+      border-bottom: 1px solid #30363d; width: 100%; max-width: 960px;
     }
     .tab-btn {
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: #8b949e;
-      cursor: pointer;
-      font-size: 0.9rem;
-      margin-bottom: -1px;
-      padding: 0.5rem 1.25rem;
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: #8b949e; cursor: pointer; font-size: .9rem;
+      margin-bottom: -1px; padding: .5rem 1.25rem;
       transition: color .15s, border-color .15s;
     }
     .tab-btn:hover { color: #e6edf3; }
     .tab-btn.active { border-bottom-color: #58a6ff; color: #58a6ff; }
-
     .tab-content { display: none; width: 100%; max-width: 960px; }
     .tab-content.active { display: block; }
 
     /* ── Shared card ───────────────────────────────────────────── */
     .card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      padding: 2rem;
-      width: 100%;
-      max-width: 560px;
+      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+      padding: 2rem; width: 100%; max-width: 600px;
     }
     h1 { font-size: 1.25rem; margin-bottom: .25rem; color: #58a6ff; }
     .subtitle { font-size: .85rem; color: #8b949e; margin-bottom: 2rem; }
@@ -61,7 +47,7 @@
     }
     .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 1rem; }
     label  { font-size: .85rem; color: #c9d1d9; }
-    input {
+    input[type="text"], input[type="number"], input[type="password"] {
       background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
       color: #e6edf3; font-size: .9rem; padding: .5rem .75rem; width: 100%;
       transition: border-color .15s;
@@ -69,12 +55,12 @@
     input:focus { outline: none; border-color: #58a6ff; }
     .hint { font-size: .75rem; color: #8b949e; }
     button.primary {
-      margin-top: 1.5rem; width: 100%; background: #238636;
-      border: none; border-radius: 6px; color: #fff; cursor: pointer;
-      font-size: .95rem; padding: .65rem; transition: background .15s;
+      margin-top: 1.5rem; width: 100%; background: #238636; border: none;
+      border-radius: 6px; color: #fff; cursor: pointer; font-size: .95rem;
+      padding: .65rem; transition: background .15s;
     }
     button.primary:hover { background: #2ea043; }
-    #status { margin-top: .75rem; font-size: .85rem; text-align: center; min-height: 1.2em; }
+    .save-status { margin-top: .75rem; font-size: .85rem; text-align: center; min-height: 1.2em; }
     .ok  { color: #3fb950; }
     .err { color: #f85149; }
 
@@ -97,6 +83,60 @@
     .action-btn:hover  { background: #30363d; color: #e6edf3; }
     .action-btn.active { background: #1f6feb; border-color: #388bfd; color: #fff; }
     .action-btn.danger:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
+
+    /* ── Detection tab ─────────────────────────────────────────── */
+    .topic-options { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1rem; }
+
+    .topic-option {
+      background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+      cursor: pointer; padding: .75rem 1rem; transition: border-color .15s;
+    }
+    .topic-option:has(input:checked),
+    .topic-option.selected { border-color: #58a6ff; }
+
+    .topic-option-header { align-items: center; display: flex; gap: .6rem; }
+    .topic-option input[type="radio"] { accent-color: #58a6ff; cursor: pointer; flex-shrink: 0; }
+    .topic-option-name { color: #c9d1d9; font-family: monospace; font-size: .88rem; font-weight: 600; }
+    .topic-option-desc { color: #8b949e; font-size: .78rem; margin-top: .35rem; padding-left: 1.4rem; }
+    .topic-custom-input {
+      margin-top: .5rem; padding-left: 1.4rem;
+    }
+    .topic-custom-input input {
+      font-family: monospace;
+    }
+
+    .filters-header {
+      align-items: center; display: flex; justify-content: space-between; margin-bottom: .6rem;
+    }
+    .filters-header .section-title { margin: 0; }
+    .filters-header-actions { display: flex; gap: .4rem; }
+
+    #filters-list { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
+
+    .filter-row {
+      align-items: center; background: #0d1117; border: 1px solid #30363d;
+      border-radius: 6px; display: flex; gap: .4rem; padding: .4rem .5rem;
+    }
+    .filter-row input {
+      background: transparent; border: none; border-radius: 4px; color: #e6edf3;
+      font-family: monospace; font-size: .83rem; padding: 3px 6px;
+      transition: background .15s;
+    }
+    .filter-row input:focus { background: #161b22; border: none; outline: 1px solid #58a6ff; }
+    .filter-prop  { flex: 2; min-width: 0; }
+    .filter-cmp   {
+      background: #21262d; border: 1px solid #30363d; border-radius: 4px;
+      color: #c9d1d9; font-size: .8rem; flex-shrink: 0; padding: 3px 6px;
+    }
+    .filter-cmp:focus { outline: 1px solid #58a6ff; }
+    .filter-val   { flex: 2; min-width: 0; }
+    .filter-remove {
+      background: none; border: none; color: #484f58; cursor: pointer;
+      flex-shrink: 0; font-size: .9rem; line-height: 1; padding: 2px 4px;
+      transition: color .15s;
+    }
+    .filter-remove:hover { color: #f85149; }
+    .filters-empty { color: #484f58; font-size: .82rem; padding: .5rem 0; }
 
     /* ── Logs tab ──────────────────────────────────────────────── */
     .logs-panel {
@@ -149,22 +189,18 @@
 
     /* ── Snapshots tab ─────────────────────────────────────────── */
     .snapshots-panel {
-      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-      min-height: 300px;
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 12px; min-height: 300px;
     }
     .snapshots-toolbar { border-radius: 12px 12px 0 0; }
-
     #gesture-filter, #snap-cam-filter {
       background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
       color: #e6edf3; font-size: .82rem; padding: 3px 8px;
     }
     .snap-actions { display: flex; gap: .4rem; margin-left: auto; }
-
     #snapshots-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 1rem;
-      padding: 1rem;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem; padding: 1rem;
     }
     .snap-empty {
       color: #484f58; font-size: .9rem; grid-column: 1/-1;
@@ -177,22 +213,17 @@
     }
     .snap-card:hover { border-color: #58a6ff; transform: translateY(-2px); }
     .snap-card img { display: block; height: 130px; object-fit: cover; width: 100%; }
-    .snap-card .snap-info {
-      padding: .5rem .6rem .4rem;
-    }
+    .snap-info { padding: .5rem .6rem .4rem; }
     .snap-camera { color: #8b949e; font-size: .72rem; margin-bottom: .25rem; }
     .snap-time   { color: #484f58; font-size: .68rem; margin-bottom: .35rem; }
     .snap-gesture-row { align-items: center; display: flex; flex-wrap: wrap; gap: .3rem; }
-    .gesture-tag {
-      border-radius: 4px; font-size: .68rem; font-weight: 600;
-      padding: 1px 6px;
-    }
-    .gesture-tag.detected  { background: #0d419d; border: 1px solid #1f6feb; color: #58a6ff; }
-    .gesture-tag.none      { background: #21262d; border: 1px solid #30363d; color: #484f58; }
+    .gesture-tag { border-radius: 4px; font-size: .68rem; font-weight: 600; padding: 1px 6px; }
+    .gesture-tag.detected { background: #0d419d; border: 1px solid #1f6feb; color: #58a6ff; }
+    .gesture-tag.none     { background: #21262d; border: 1px solid #30363d; color: #484f58; }
     .snap-card-actions {
       bottom: 0; display: flex; gap: .3rem; justify-content: flex-end;
-      opacity: 0; padding: .3rem .4rem; position: absolute;
-      right: 0; transition: opacity .15s;
+      opacity: 0; padding: .3rem .4rem; position: absolute; right: 0;
+      transition: opacity .15s;
     }
     .snap-card:hover .snap-card-actions { opacity: 1; }
     .snap-icon-btn {
@@ -200,8 +231,8 @@
       color: #c9d1d9; cursor: pointer; font-size: .75rem; padding: 3px 7px;
       transition: background .15s;
     }
-    .snap-icon-btn:hover       { background: #30363d; color: #e6edf3; }
-    .snap-icon-btn.del:hover   { background: #b91c1c; border-color: #f85149; color: #fff; }
+    .snap-icon-btn:hover     { background: #30363d; color: #e6edf3; }
+    .snap-icon-btn.del:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
 
     /* ── Modal ─────────────────────────────────────────────────── */
     .modal {
@@ -225,25 +256,20 @@
     .modal-title { color: #e6edf3; font-size: .95rem; font-weight: 600; }
     .modal-close {
       background: none; border: none; color: #8b949e; cursor: pointer;
-      font-size: 1.3rem; line-height: 1; padding: 0 .25rem;
-      transition: color .15s;
+      font-size: 1.3rem; line-height: 1; padding: 0 .25rem; transition: color .15s;
     }
     .modal-close:hover { color: #e6edf3; }
     .modal-body {
-      display: flex; flex-direction: column; gap: 1rem;
-      overflow-y: auto; padding: 1rem;
+      display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; padding: 1rem;
     }
-    @media (min-width: 600px) {
-      .modal-body { flex-direction: row; }
-    }
+    @media (min-width: 600px) { .modal-body { flex-direction: row; } }
     .modal-img-wrap { flex: 1.5; }
     .modal-img-wrap img {
-      border-radius: 6px; display: block; max-height: 60vh;
-      object-fit: contain; width: 100%;
+      border-radius: 6px; display: block; max-height: 60vh; object-fit: contain; width: 100%;
     }
     .modal-meta { display: flex; flex-direction: column; flex: 1; gap: .6rem; }
-    .meta-row { display: flex; flex-direction: column; gap: 2px; }
-    .meta-label { color: #8b949e; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+    .meta-row  { display: flex; flex-direction: column; gap: 2px; }
+    .meta-label { color: #8b949e; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
     .meta-val   { color: #e6edf3; font-size: .85rem; }
     .modal-footer {
       border-top: 1px solid #30363d; display: flex;
@@ -262,12 +288,13 @@
 
   <!-- Tab bar -->
   <div class="tabs">
-    <button class="tab-btn active" data-tab="config">Configuration</button>
-    <button class="tab-btn"        data-tab="snapshots">Snapshots</button>
-    <button class="tab-btn"        data-tab="logs">Logs</button>
+    <button class="tab-btn active"  data-tab="config">Connections</button>
+    <button class="tab-btn"         data-tab="detection">Detection</button>
+    <button class="tab-btn"         data-tab="snapshots">Snapshots</button>
+    <button class="tab-btn"         data-tab="logs">Logs</button>
   </div>
 
-  <!-- ══ Configuration tab ══════════════════════════════════════════ -->
+  <!-- ══ Connections tab ════════════════════════════════════════════ -->
   <div id="tab-config" class="tab-content active">
     <div class="card">
       <h1>Connections Configuration</h1>
@@ -297,11 +324,6 @@
           <label for="frigate_url">Base URL</label>
           <input id="frigate_url" name="frigate_url" type="text" value="{{ config.frigate_url }}" />
         </div>
-        <div class="field">
-          <label for="score_threshold">Detection score threshold</label>
-          <input id="score_threshold" name="score_threshold" type="number" step="0.05" min="0" max="1" value="{{ config.score_threshold }}" />
-          <span class="hint">Events below this score are ignored (0 – 1).</span>
-        </div>
 
         <p class="section-title">Output</p>
         <div class="field">
@@ -325,7 +347,71 @@
         </div>
 
         <button type="submit" class="primary">Save configuration</button>
-        <p id="status"></p>
+        <p class="save-status" id="config-status"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══ Detection tab ══════════════════════════════════════════════ -->
+  <div id="tab-detection" class="tab-content">
+    <div class="card" style="max-width:660px">
+      <h1>Detection Configuration</h1>
+      <p class="subtitle">Controls which MQTT messages trigger a snapshot download and hand recognition.</p>
+
+      <form id="detection-form">
+        <p class="section-title">MQTT Topic</p>
+
+        <div class="topic-options" id="topic-options">
+
+          <label class="topic-option">
+            <div class="topic-option-header">
+              <input type="radio" name="mqtt_topic_choice" value="frigate/events" />
+              <span class="topic-option-name">frigate/events</span>
+            </div>
+            <div class="topic-option-desc">
+              Triggered when Frigate creates, updates, or ends a detected object event.
+              Payload contains <code>type</code>, <code>before</code>, and <code>after</code> sub-objects —
+              filter on fields like <code>after.label</code> or <code>after.top_score</code>.
+            </div>
+          </label>
+
+          <label class="topic-option">
+            <div class="topic-option-header">
+              <input type="radio" name="mqtt_topic_choice" value="frigate/tracked_object_update" />
+              <span class="topic-option-name">frigate/tracked_object_update</span>
+            </div>
+            <div class="topic-option-desc">
+              Triggered on every update cycle of a tracked object (higher frequency).
+              Payload is flat — filter on fields like <code>type</code>, <code>name</code>, or <code>score</code>.
+            </div>
+          </label>
+
+          <label class="topic-option" id="custom-topic-option">
+            <div class="topic-option-header">
+              <input type="radio" name="mqtt_topic_choice" value="__custom__" />
+              <span class="topic-option-name">Custom topic</span>
+            </div>
+            <div class="topic-option-desc">Override with any MQTT topic. Supports wildcards (<code>+</code>, <code>#</code>).</div>
+            <div class="topic-custom-input" id="custom-topic-wrap" style="display:none">
+              <input type="text" id="custom-topic-input" placeholder="e.g. frigate/+/events" />
+            </div>
+          </label>
+
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-header">
+          <p class="section-title">Filters <span style="color:#484f58;font-weight:400;text-transform:none;letter-spacing:0">(all must match)</span></p>
+          <div class="filters-header-actions">
+            <button type="button" class="action-btn" id="btn-reset-filters">Reset to defaults</button>
+            <button type="button" class="action-btn" id="btn-add-filter">+ Add filter</button>
+          </div>
+        </div>
+
+        <div id="filters-list"></div>
+
+        <button type="submit" class="primary">Save detection configuration</button>
+        <p class="save-status" id="detection-status"></p>
       </form>
     </div>
   </div>
@@ -336,16 +422,11 @@
       <div class="toolbar snapshots-toolbar">
         <div class="filter-group">
           <span class="filter-label">Gesture</span>
-          <select id="gesture-filter">
-            <option value="">All</option>
-            <option value="__none__">No detection</option>
-          </select>
+          <select id="gesture-filter"><option value="">All</option><option value="__none__">No detection</option></select>
         </div>
         <div class="filter-group">
           <span class="filter-label">Camera</span>
-          <select id="snap-cam-filter">
-            <option value="">All</option>
-          </select>
+          <select id="snap-cam-filter"><option value="">All</option></select>
         </div>
         <div class="snap-actions">
           <button class="action-btn" id="btn-refresh-snaps">Refresh</button>
@@ -391,9 +472,7 @@
         <button class="modal-close" id="modal-close">×</button>
       </div>
       <div class="modal-body">
-        <div class="modal-img-wrap">
-          <img id="modal-img" src="" alt="Snapshot" />
-        </div>
+        <div class="modal-img-wrap"><img id="modal-img" src="" alt="Snapshot" /></div>
         <div class="modal-meta" id="modal-meta"></div>
       </div>
       <div class="modal-footer">
@@ -405,26 +484,40 @@
 
   <script>
     // ── API URLs ────────────────────────────────────────────────────
-    const URL_CONFIG          = {{ url_for('update_config')       | tojson }};
-    const URL_LOGS            = {{ url_for('get_logs')            | tojson }};
-    const URL_LOGS_CLEAR      = {{ url_for('clear_logs')          | tojson }};
-    const URL_LOGS_STREAM     = {{ url_for('stream_logs')         | tojson }};
-    const URL_SNAPSHOTS       = {{ url_for('get_snapshots')       | tojson }};
-    const URL_SNAPS_CLEAR     = {{ url_for('clear_snapshots')     | tojson }};
+    const URL_CONFIG       = {{ url_for('update_config')   | tojson }};
+    const URL_LOGS         = {{ url_for('get_logs')        | tojson }};
+    const URL_LOGS_CLEAR   = {{ url_for('clear_logs')      | tojson }};
+    const URL_LOGS_STREAM  = {{ url_for('stream_logs')     | tojson }};
+    const URL_SNAPSHOTS    = {{ url_for('get_snapshots')   | tojson }};
+    const URL_SNAPS_CLEAR  = {{ url_for('clear_snapshots') | tojson }};
 
-    function snapImageUrl(id) {
-      // Build URL from the base snapshots URL pattern
-      return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}/image`);
-    }
-    function snapDeleteUrl(id) {
-      return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}`);
-    }
+    function snapImageUrl(id)  { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}/image`); }
+    function snapDeleteUrl(id) { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}`); }
 
     const GESTURE_EMOJI = {
-      fist: "✊", thumbs_up: "👍", pointing: "☝️", peace: "✌️",
-      open_palm: "🖐️", four_fingers: "🤚", rock_on: "🤘",
-      call_me: "🤙", pinky: "🤙", three_fingers: "🤟", unknown: "🤔",
+      fist:"✊", thumbs_up:"👍", pointing:"☝️", peace:"✌️", open_palm:"🖐️",
+      four_fingers:"🤚", rock_on:"🤘", call_me:"🤙", pinky:"🤙", three_fingers:"🤟", unknown:"🤔",
     };
+
+    const COMPARATORS = ["==","!=",">","<",">=","<=","contains","not contains"];
+
+    // Default filters per predefined topic
+    const TOPIC_DEFAULTS = {
+      "frigate/events": [
+        { property:"type",           comparator:"==", value:"update"  },
+        { property:"after.label",    comparator:"==", value:"person"  },
+        { property:"after.top_score",comparator:">",  value:"0.7"     },
+      ],
+      "frigate/tracked_object_update": [
+        { property:"type",  comparator:"==", value:"face"    },
+        { property:"name",  comparator:"!=", value:"unknown" },
+        { property:"score", comparator:">",  value:"0.7"     },
+      ],
+    };
+
+    // Initial config values from server
+    const INIT_TOPIC   = {{ (config.mqtt_topic   | default('frigate/events')) | tojson }};
+    const INIT_FILTERS = {{ (config.topic_filters | default([])) | tojson }};
 
     // ── Tab switching ───────────────────────────────────────────────
     document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -437,74 +530,182 @@
       });
     });
 
-    // ══ Configuration ════════════════════════════════════════════════
+    // ══ Connections form ════════════════════════════════════════════
     document.getElementById("config-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const status = document.getElementById("status");
+      const status = document.getElementById("config-status");
       const data = Object.fromEntries(new FormData(e.target).entries());
-      ["mqtt_port", "web_ui_port", "max_snapshots"].forEach(k => { data[k] = parseInt(data[k], 10); });
-      data["score_threshold"] = parseFloat(data["score_threshold"]);
-      status.textContent = "Saving…"; status.className = "";
+      ["mqtt_port","web_ui_port","max_snapshots"].forEach(k => { data[k] = parseInt(data[k],10); });
+      status.textContent = "Saving…"; status.className = "save-status";
       try {
-        const res  = await fetch(URL_CONFIG, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data) });
+        const res  = await fetch(URL_CONFIG, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data) });
         const json = await res.json();
-        if (res.ok) { status.textContent = "Configuration saved."; status.className = "ok"; }
-        else        { status.textContent = "Error: " + (json.error || res.statusText); status.className = "err"; }
-      } catch (err) { status.textContent = "Network error: " + err.message; status.className = "err"; }
+        if (res.ok) { status.textContent = "Saved."; status.className = "save-status ok"; }
+        else        { status.textContent = "Error: "+(json.error||res.statusText); status.className = "save-status err"; }
+      } catch(err) { status.textContent = "Network error: "+err.message; status.className = "save-status err"; }
     });
 
-    // ══ Snapshots ════════════════════════════════════════════════════
-    let allSnaps = [];
-    let activeGestureFilter = "";
-    let activeCamFilter = "";
-    let modalSnap = null;
+    // ══ Detection form ══════════════════════════════════════════════
 
+    // Topic radio logic
+    const PREDEFINED = ["frigate/events","frigate/tracked_object_update"];
+    let currentTopic = INIT_TOPIC;
+
+    function initTopicRadios() {
+      const isCustom = !PREDEFINED.includes(currentTopic);
+      document.querySelectorAll("input[name='mqtt_topic_choice']").forEach(r => {
+        r.checked = isCustom ? r.value === "__custom__" : r.value === currentTopic;
+      });
+      document.getElementById("custom-topic-wrap").style.display = isCustom ? "block" : "none";
+      if (isCustom) document.getElementById("custom-topic-input").value = currentTopic;
+      updateTopicOptionStyles();
+    }
+
+    function updateTopicOptionStyles() {
+      document.querySelectorAll(".topic-option").forEach(opt => {
+        opt.classList.toggle("selected", opt.querySelector("input[type=radio]").checked);
+      });
+    }
+
+    document.querySelectorAll("input[name='mqtt_topic_choice']").forEach(r => {
+      r.addEventListener("change", () => {
+        const isCustom = r.value === "__custom__";
+        document.getElementById("custom-topic-wrap").style.display = isCustom ? "block" : "none";
+        if (!isCustom) {
+          currentTopic = r.value;
+          renderDefaultFiltersForTopic(r.value);
+        }
+        updateTopicOptionStyles();
+      });
+    });
+
+    function getSelectedTopic() {
+      const checked = document.querySelector("input[name='mqtt_topic_choice']:checked");
+      if (!checked) return "frigate/events";
+      if (checked.value === "__custom__") return document.getElementById("custom-topic-input").value.trim();
+      return checked.value;
+    }
+
+    function renderDefaultFiltersForTopic(topic) {
+      const defaults = TOPIC_DEFAULTS[topic] || [];
+      renderFilters(defaults);
+    }
+
+    // Filter rows
+    function renderFilters(filters) {
+      const list = document.getElementById("filters-list");
+      list.innerHTML = "";
+      if (filters.length === 0) {
+        list.innerHTML = '<div class="filters-empty">No filters — all messages will trigger processing.</div>';
+        return;
+      }
+      filters.forEach(f => addFilterRow(f));
+    }
+
+    function addFilterRow(f = { property:"", comparator:"==", value:"" }) {
+      const list = document.getElementById("filters-list");
+      // Remove empty placeholder if present
+      const placeholder = list.querySelector(".filters-empty");
+      if (placeholder) placeholder.remove();
+
+      const row = document.createElement("div");
+      row.className = "filter-row";
+
+      const cmpOptions = COMPARATORS.map(c =>
+        `<option value="${c}"${c === f.comparator ? " selected" : ""}>${c}</option>`
+      ).join("");
+
+      row.innerHTML = `
+        <input class="filter-prop" type="text"  placeholder="property (e.g. after.label)" value="${escHtml(f.property)}" />
+        <select class="filter-cmp">${cmpOptions}</select>
+        <input class="filter-val"  type="text"  placeholder="value" value="${escHtml(f.value)}" />
+        <button type="button" class="filter-remove" title="Remove">✕</button>`;
+
+      row.querySelector(".filter-remove").addEventListener("click", () => {
+        row.remove();
+        if (document.getElementById("filters-list").children.length === 0) {
+          document.getElementById("filters-list").innerHTML =
+            '<div class="filters-empty">No filters — all messages will trigger processing.</div>';
+        }
+      });
+
+      list.appendChild(row);
+    }
+
+    function collectFilters() {
+      return [...document.querySelectorAll("#filters-list .filter-row")].map(row => ({
+        property:   row.querySelector(".filter-prop").value.trim(),
+        comparator: row.querySelector(".filter-cmp").value,
+        value:      row.querySelector(".filter-val").value.trim(),
+      })).filter(f => f.property);
+    }
+
+    document.getElementById("btn-add-filter").addEventListener("click", () => addFilterRow());
+    document.getElementById("btn-reset-filters").addEventListener("click", () => {
+      const topic = getSelectedTopic();
+      renderDefaultFiltersForTopic(topic);
+    });
+
+    // Detection form save
+    document.getElementById("detection-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const status = document.getElementById("detection-status");
+      const payload = {
+        mqtt_topic:    getSelectedTopic(),
+        topic_filters: collectFilters(),
+      };
+      status.textContent = "Saving…"; status.className = "save-status";
+      try {
+        const res  = await fetch(URL_CONFIG, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+        const json = await res.json();
+        if (res.ok) { status.textContent = "Saved. Restart the add-on to apply topic changes."; status.className = "save-status ok"; }
+        else        { status.textContent = "Error: "+(json.error||res.statusText); status.className = "save-status err"; }
+      } catch(err) { status.textContent = "Network error: "+err.message; status.className = "save-status err"; }
+    });
+
+    // Initialise detection tab from server config
+    initTopicRadios();
+    renderFilters(INIT_FILTERS);
+
+    // ══ Snapshots ═══════════════════════════════════════════════════
+    let allSnaps = [], activeGestureFilter = "", activeCamFilter = "", modalSnap = null;
     const gestureFilter = document.getElementById("gesture-filter");
     const camFilter     = document.getElementById("snap-cam-filter");
     const grid          = document.getElementById("snapshots-grid");
 
     gestureFilter.addEventListener("change", () => { activeGestureFilter = gestureFilter.value; renderGrid(); });
     camFilter.addEventListener("change",     () => { activeCamFilter     = camFilter.value;     renderGrid(); });
-
     document.getElementById("btn-refresh-snaps").addEventListener("click", loadSnapshots);
     document.getElementById("btn-clear-snaps").addEventListener("click", async () => {
-      await fetch(URL_SNAPS_CLEAR, { method: "DELETE" });
-      allSnaps = [];
-      renderGrid();
+      await fetch(URL_SNAPS_CLEAR, { method:"DELETE" });
+      allSnaps = []; renderGrid();
     });
 
     async function loadSnapshots() {
       const res = await fetch(URL_SNAPSHOTS);
       allSnaps  = await res.json();
-      rebuildFilters();
-      renderGrid();
+      rebuildSnapFilters(); renderGrid();
     }
 
-    function rebuildFilters() {
-      const gestures = new Set();
-      const cameras  = new Set();
+    function rebuildSnapFilters() {
+      const gestures = new Set(), cameras = new Set();
       allSnaps.forEach(s => {
         cameras.add(s.camera);
-        if (s.detections.length === 0) gestures.add("__none__");
+        if (!s.detections.length) gestures.add("__none__");
         else s.detections.forEach(d => gestures.add(d.gesture));
       });
-
-      // Gesture dropdown
       const curG = gestureFilter.value;
       gestureFilter.innerHTML = '<option value="">All</option><option value="__none__">No detection</option>';
       [...gestures].filter(g => g !== "__none__").sort().forEach(g => {
-        const o = document.createElement("option");
-        o.value = g; o.textContent = `${GESTURE_EMOJI[g] || "?"} ${g.replace(/_/g," ")}`;
+        const o = document.createElement("option"); o.value = g;
+        o.textContent = `${GESTURE_EMOJI[g]||"?"} ${g.replace(/_/g," ")}`;
         gestureFilter.appendChild(o);
       });
       gestureFilter.value = curG;
-
-      // Camera dropdown
       const curC = camFilter.value;
       camFilter.innerHTML = '<option value="">All</option>';
       [...cameras].sort().forEach(c => {
-        const o = document.createElement("option");
-        o.value = c; o.textContent = c;
+        const o = document.createElement("option"); o.value = c; o.textContent = c;
         camFilter.appendChild(o);
       });
       camFilter.value = curC;
@@ -513,27 +714,24 @@
     function matchSnap(s) {
       if (activeCamFilter && s.camera !== activeCamFilter) return false;
       if (!activeGestureFilter) return true;
-      if (activeGestureFilter === "__none__") return s.detections.length === 0;
+      if (activeGestureFilter === "__none__") return !s.detections.length;
       return s.detections.some(d => d.gesture === activeGestureFilter);
     }
 
-    function gestureTagsHtml(detections) {
-      if (detections.length === 0) return `<span class="gesture-tag none">No hands</span>`;
-      return detections.map(d =>
-        `<span class="gesture-tag detected">${GESTURE_EMOJI[d.gesture] || "?"} ${d.gesture.replace(/_/g," ")}</span>`
-      ).join("");
+    function gestureTagsHtml(d) {
+      if (!d.length) return `<span class="gesture-tag none">No hands</span>`;
+      return d.map(x=>`<span class="gesture-tag detected">${GESTURE_EMOJI[x.gesture]||"?"} ${x.gesture.replace(/_/g," ")}</span>`).join("");
     }
 
     function renderGrid() {
       const visible = allSnaps.filter(matchSnap);
-      if (visible.length === 0) {
-        grid.innerHTML = `<div class="snap-empty">No snapshots${allSnaps.length ? " match the current filter" : " yet"}.</div>`;
+      if (!visible.length) {
+        grid.innerHTML = `<div class="snap-empty">No snapshots${allSnaps.length?" match the current filter":" yet"}.</div>`;
         return;
       }
       grid.innerHTML = "";
       visible.forEach(s => {
-        const card = document.createElement("div");
-        card.className = "snap-card";
+        const card = document.createElement("div"); card.className = "snap-card";
         card.innerHTML = `
           <img src="${snapImageUrl(s.id)}" alt="snapshot" loading="lazy" />
           <div class="snap-info">
@@ -545,90 +743,59 @@
             <button class="snap-icon-btn dl"  title="Download">↓</button>
             <button class="snap-icon-btn del" title="Delete">✕</button>
           </div>`;
-
-        card.addEventListener("click", (e) => {
-          if (e.target.closest(".snap-card-actions")) return;
-          openModal(s);
-        });
-        card.querySelector(".dl").addEventListener("click", (e) => {
-          e.stopPropagation(); downloadSnap(s);
-        });
-        card.querySelector(".del").addEventListener("click", async (e) => {
+        card.addEventListener("click", e => { if (!e.target.closest(".snap-card-actions")) openModal(s); });
+        card.querySelector(".dl").addEventListener("click",  e => { e.stopPropagation(); downloadSnap(s); });
+        card.querySelector(".del").addEventListener("click", async e => {
           e.stopPropagation();
-          await fetch(snapDeleteUrl(s.id), { method: "DELETE" });
+          await fetch(snapDeleteUrl(s.id), {method:"DELETE"});
           allSnaps = allSnaps.filter(x => x.id !== s.id);
-          rebuildFilters();
-          renderGrid();
+          rebuildSnapFilters(); renderGrid();
         });
         grid.appendChild(card);
       });
     }
 
     function downloadSnap(s) {
-      const a = document.createElement("a");
-      a.href = snapImageUrl(s.id);
-      a.download = `${s.camera}_${s.timestamp.replace(/[: ]/g,"-")}.jpg`;
-      a.click();
+      const a = document.createElement("a"); a.href = snapImageUrl(s.id);
+      a.download = `${s.camera}_${s.timestamp.replace(/[: ]/g,"-")}.jpg`; a.click();
     }
 
-    // ── Modal ───────────────────────────────────────────────────────
-    const modal       = document.getElementById("snapshot-modal");
-    const modalImg    = document.getElementById("modal-img");
-    const modalMeta   = document.getElementById("modal-meta");
-    const modalTitle  = document.getElementById("modal-title");
-
+    // Modal
+    const modal = document.getElementById("snapshot-modal");
+    const modalImg = document.getElementById("modal-img");
     function openModal(s) {
       modalSnap = s;
-      modalTitle.textContent = `${s.camera} — ${s.timestamp}`;
+      document.getElementById("modal-title").textContent = `${s.camera} — ${s.timestamp}`;
       modalImg.src = snapImageUrl(s.id);
-
-      const gestureText = s.detections.length === 0
-        ? "None"
-        : s.detections.map(d => `${GESTURE_EMOJI[d.gesture] || "?"} ${d.gesture.replace(/_/g," ")} (${d.hand}, ${d.score})`).join(", ");
-
-      modalMeta.innerHTML = `
+      const gt = s.detections.length
+        ? s.detections.map(d=>`${GESTURE_EMOJI[d.gesture]||"?"} ${d.gesture.replace(/_/g," ")} (${d.hand}, ${d.score})`).join(", ")
+        : "None";
+      document.getElementById("modal-meta").innerHTML = `
         <div class="meta-row"><span class="meta-label">Camera</span><span class="meta-val">${escHtml(s.camera)}</span></div>
         <div class="meta-row"><span class="meta-label">Time</span><span class="meta-val">${s.timestamp}</span></div>
         <div class="meta-row"><span class="meta-label">Frigate score</span><span class="meta-val">${s.frigate_score}</span></div>
         <div class="meta-row"><span class="meta-label">Event ID</span><span class="meta-val" style="font-size:.75rem;word-break:break-all">${escHtml(s.event_id)}</span></div>
-        <div class="meta-row"><span class="meta-label">Gesture(s)</span><span class="meta-val">${gestureText}</span></div>`;
-
+        <div class="meta-row"><span class="meta-label">Gesture(s)</span><span class="meta-val">${gt}</span></div>`;
       modal.classList.remove("hidden");
     }
-
-    function closeModal() {
-      modal.classList.add("hidden");
-      modalSnap = null;
-      modalImg.src = "";
-    }
-
+    function closeModal() { modal.classList.add("hidden"); modalSnap = null; modalImg.src = ""; }
     document.getElementById("modal-close").addEventListener("click", closeModal);
     document.getElementById("modal-backdrop").addEventListener("click", closeModal);
-    document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
-
-    document.getElementById("modal-download").addEventListener("click", () => {
-      if (modalSnap) downloadSnap(modalSnap);
-    });
+    document.addEventListener("keydown", e => { if (e.key==="Escape") closeModal(); });
+    document.getElementById("modal-download").addEventListener("click", () => { if (modalSnap) downloadSnap(modalSnap); });
     document.getElementById("modal-delete").addEventListener("click", async () => {
       if (!modalSnap) return;
-      await fetch(snapDeleteUrl(modalSnap.id), { method: "DELETE" });
+      await fetch(snapDeleteUrl(modalSnap.id), {method:"DELETE"});
       allSnaps = allSnaps.filter(x => x.id !== modalSnap.id);
-      rebuildFilters();
-      renderGrid();
-      closeModal();
+      rebuildSnapFilters(); renderGrid(); closeModal();
     });
 
     // ══ Logs ════════════════════════════════════════════════════════
     const logContainer = document.getElementById("log-container");
     const logStatus    = document.getElementById("log-status");
     const sourceFilter = document.getElementById("source-filter");
-
-    let paused       = false;
-    let activeLevels = new Set(["DEBUG","INFO","WARNING","ERROR","CRITICAL"]);
-    let activeSource = "";
-    let allEntries   = [];
-    let knownSources = new Set();
-    let entryCount   = 0;
+    let paused = false, activeLevels = new Set(["DEBUG","INFO","WARNING","ERROR","CRITICAL"]);
+    let activeSource = "", allEntries = [], knownSources = new Set(), entryCount = 0;
 
     document.querySelectorAll(".level-badge").forEach(badge => {
       badge.addEventListener("click", () => {
@@ -640,81 +807,58 @@
     });
     sourceFilter.addEventListener("change", () => { activeSource = sourceFilter.value; rerenderLogs(); });
 
-    function logMatchesFilters(e) {
-      if (!activeLevels.has(e.level)) return false;
-      if (activeSource && e.source !== activeSource) return false;
-      return true;
-    }
+    function logOk(e) { return activeLevels.has(e.level) && (!activeSource || e.source===activeSource); }
     function makeLogRow(e) {
-      const row = document.createElement("div");
-      row.className = `log-entry ${e.level}`;
-      row.innerHTML =
-        `<span class="log-ts">${e.timestamp.slice(11)}</span>` +
-        `<span class="log-lvl">${e.level}</span>` +
-        `<span class="log-src" title="${e.source}">${e.source}</span>` +
-        `<span class="log-msg">${escHtml(e.message)}</span>`;
+      const row = document.createElement("div"); row.className = `log-entry ${e.level}`;
+      row.innerHTML = `<span class="log-ts">${e.timestamp.slice(11)}</span><span class="log-lvl">${e.level}</span><span class="log-src" title="${e.source}">${e.source}</span><span class="log-msg">${escHtml(e.message)}</span>`;
       return row;
     }
     function rerenderLogs() {
       logContainer.innerHTML = "";
-      allEntries.filter(logMatchesFilters).forEach(e => logContainer.appendChild(makeLogRow(e)));
+      allEntries.filter(logOk).forEach(e => logContainer.appendChild(makeLogRow(e)));
       if (!paused) logContainer.scrollTop = logContainer.scrollHeight;
     }
     function appendLogEntry(e) {
       allEntries.push(e);
       if (!knownSources.has(e.source)) {
         knownSources.add(e.source);
-        const opt = document.createElement("option");
-        opt.value = e.source; opt.textContent = e.source;
+        const opt = document.createElement("option"); opt.value = e.source; opt.textContent = e.source;
         sourceFilter.appendChild(opt);
       }
-      if (!logMatchesFilters(e)) return;
+      if (!logOk(e)) return;
       logContainer.appendChild(makeLogRow(e));
       entryCount++;
       if (!paused) logContainer.scrollTop = logContainer.scrollHeight;
       logStatus.textContent = `${entryCount} entries`;
     }
 
-    document.getElementById("btn-pause").addEventListener("click", function () {
-      paused = !paused;
-      this.textContent = paused ? "Resume" : "Pause";
-      this.classList.toggle("active", paused);
+    document.getElementById("btn-pause").addEventListener("click", function() {
+      paused = !paused; this.textContent = paused?"Resume":"Pause"; this.classList.toggle("active",paused);
       if (!paused) logContainer.scrollTop = logContainer.scrollHeight;
     });
     document.getElementById("btn-clear-logs").addEventListener("click", async () => {
-      await fetch(URL_LOGS_CLEAR, { method: "DELETE" });
-      allEntries = []; knownSources.clear(); entryCount = 0;
-      logContainer.innerHTML = "";
-      sourceFilter.innerHTML = '<option value="">All sources</option>';
-      activeSource = "";
-      logStatus.textContent = "Cleared";
+      await fetch(URL_LOGS_CLEAR,{method:"DELETE"});
+      allEntries=[]; knownSources.clear(); entryCount=0; logContainer.innerHTML="";
+      sourceFilter.innerHTML='<option value="">All sources</option>'; activeSource="";
+      logStatus.textContent="Cleared";
     });
     document.getElementById("btn-download-logs").addEventListener("click", () => {
-      const lines = allEntries.filter(logMatchesFilters)
-        .map(e => `${e.timestamp} [${e.level}] ${e.source}: ${e.message}`).join("\n");
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([lines], {type:"text/plain"}));
-      a.download = `hand-recognition-${new Date().toISOString().slice(0,19).replace(/:/g,"-")}.log`;
-      a.click();
+      const lines = allEntries.filter(logOk).map(e=>`${e.timestamp} [${e.level}] ${e.source}: ${e.message}`).join("\n");
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines],{type:"text/plain"}));
+      a.download = `hand-recognition-${new Date().toISOString().slice(0,19).replace(/:/g,"-")}.log`; a.click();
     });
 
     function connectStream() {
       logStatus.textContent = "Connecting…";
       const es = new EventSource(URL_LOGS_STREAM);
       es.onopen    = () => { logStatus.textContent = `${entryCount} entries`; };
-      es.onmessage = (e) => { try { appendLogEntry(JSON.parse(e.data)); } catch(_){} };
-      es.onerror   = () => {
-        logStatus.textContent = "Disconnected — reconnecting in 3 s…";
-        es.close();
-        setTimeout(connectStream, 3000);
-      };
+      es.onmessage = e  => { try { appendLogEntry(JSON.parse(e.data)); } catch(_){} };
+      es.onerror   = () => { logStatus.textContent="Disconnected — reconnecting in 3 s…"; es.close(); setTimeout(connectStream,3000); };
     }
     connectStream();
 
     // ── Shared helpers ──────────────────────────────────────────────
-    function escHtml(s) {
-      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    }
+    function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   </script>
 </body>
 </html>

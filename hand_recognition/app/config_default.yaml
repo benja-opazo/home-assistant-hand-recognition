@@ -3,7 +3,17 @@ mqtt_port: 1883
 mqtt_username: ""
 mqtt_password: ""
 frigate_url: http://homeassistant.local:5000
-score_threshold: 0.7
 output_topic_template: "hand-recognition/{camera}"
 web_ui_port: 8099
 max_snapshots: 10
+mqtt_topic: "frigate/events"
+topic_filters:
+  - property: "type"
+    comparator: "=="
+    value: "update"
+  - property: "after.label"
+    comparator: "=="
+    value: "person"
+  - property: "after.top_score"
+    comparator: ">"
+    value: "0.7"
