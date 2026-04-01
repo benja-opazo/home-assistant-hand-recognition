@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hand Recognition — Configuration</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      margin-bottom: 0.25rem;
+      color: #58a6ff;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #8b949e;
+      margin-bottom: 2rem;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8b949e;
+      margin: 1.5rem 0 0.75rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: #c9d1d9;
+    }
+
+    input {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.75rem;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: #8b949e;
+    }
+
+    button {
+      margin-top: 1.5rem;
+      width: 100%;
+      background: #238636;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.95rem;
+      padding: 0.65rem;
+      transition: background 0.15s;
+    }
+
+    button:hover { background: #2ea043; }
+
+    #status {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      text-align: center;
+      min-height: 1.2em;
+    }
+    .ok  { color: #3fb950; }
+    .err { color: #f85149; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Hand Recognition</h1>
+    <p class="subtitle">Add-on configuration — changes are saved to <code>/data/config.yaml</code></p>
+
+    <form id="config-form">
+      <p class="section-title">MQTT Broker</p>
+
+      <div class="field">
+        <label for="mqtt_host">Host</label>
+        <input id="mqtt_host" name="mqtt_host" type="text" value="{{ config.mqtt_host }}" />
+      </div>
+
+      <div class="field">
+        <label for="mqtt_port">Port</label>
+        <input id="mqtt_port" name="mqtt_port" type="number" value="{{ config.mqtt_port }}" />
+      </div>
+
+      <div class="field">
+        <label for="mqtt_username">Username</label>
+        <input id="mqtt_username" name="mqtt_username" type="text" value="{{ config.mqtt_username }}" />
+      </div>
+
+      <div class="field">
+        <label for="mqtt_password">Password</label>
+        <input id="mqtt_password" name="mqtt_password" type="password" value="{{ config.mqtt_password }}" />
+      </div>
+
+      <p class="section-title">Frigate</p>
+
+      <div class="field">
+        <label for="frigate_url">Base URL</label>
+        <input id="frigate_url" name="frigate_url" type="text" value="{{ config.frigate_url }}" />
+      </div>
+
+      <div class="field">
+        <label for="score_threshold">Detection score threshold</label>
+        <input id="score_threshold" name="score_threshold" type="number" step="0.05" min="0" max="1" value="{{ config.score_threshold }}" />
+        <span class="hint">Events with a score below this value are ignored (0 – 1).</span>
+      </div>
+
+      <p class="section-title">Output</p>
+
+      <div class="field">
+        <label for="output_topic_template">MQTT topic template</label>
+        <input id="output_topic_template" name="output_topic_template" type="text" value="{{ config.output_topic_template }}" />
+        <span class="hint">Use <code>{camera}</code> as a placeholder for the camera name.</span>
+      </div>
+
+      <p class="section-title">Web UI</p>
+
+      <div class="field">
+        <label for="web_ui_port">Port</label>
+        <input id="web_ui_port" name="web_ui_port" type="number" value="{{ config.web_ui_port }}" />
+        <span class="hint">Restart the add-on after changing this.</span>
+      </div>
+
+      <button type="submit">Save configuration</button>
+      <p id="status"></p>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("config-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const status = document.getElementById("status");
+      const form = e.target;
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      // Coerce numeric fields
+      ["mqtt_port", "web_ui_port"].forEach(k => { data[k] = parseInt(data[k], 10); });
+      data["score_threshold"] = parseFloat(data["score_threshold"]);
+
+      status.textContent = "Saving…";
+      status.className = "";
+
+      try {
+        const res = await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          status.textContent = "Configuration saved.";
+          status.className = "ok";
+        } else {
+          status.textContent = "Error: " + (json.error || res.statusText);
+          status.className = "err";
+        }
+      } catch (err) {
+        status.textContent = "Network error: " + err.message;
+        status.className = "err";
+      }
+    });
+  </script>
+</body>
+</html>
