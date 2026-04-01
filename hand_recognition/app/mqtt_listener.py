@@ -53,24 +53,39 @@ class MQTTListener:
 
     def _on_message(self, client, userdata, msg):
         try:
-            payload = json.loads(msg.payload.decode())
-        except (json.JSONDecodeError, UnicodeDecodeError) as e:
-            logger.warning("Could not parse MQTT message: %s", e)
+            raw = msg.payload.decode()
+            payload = json.loads(raw)
+        except UnicodeDecodeError as e:
+            logger.warning(
+                "Could not decode MQTT message on topic '%s': %s | raw bytes: %s",
+                msg.topic, e, msg.payload,
+            )
+            return
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "Could not parse MQTT message on topic '%s' as JSON: %s\n"
+                "Raw payload: %s",
+                msg.topic, e, raw,
+            )
             return
 
         # Apply every configured filter — all must pass
         for f in self._config.get("topic_filters", []):
             if not self._apply_filter(payload, f):
                 logger.debug(
-                    "Filter rejected message: %s %s %s",
-                    f.get("property"), f.get("comparator"), f.get("value"),
+                    "Filter rejected message on topic '%s': %s %s %s",
+                    msg.topic, f.get("property"), f.get("comparator"), f.get("value"),
                 )
                 return
 
         event_id, camera, score = self._extract_event_info(payload)
 
         if not event_id:
-            logger.warning("Could not extract event ID from payload: %s", payload)
+            logger.warning(
+                "Could not extract event ID from message on topic '%s'.\n"
+                "Payload: %s",
+                msg.topic, json.dumps(payload, indent=2),
+            )
             return
 
         logger.info(
