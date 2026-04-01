@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt
 from frigate_client import FrigateClient
 from hand_recognizer import HandRecognizer
 from mqtt_publisher import MQTTPublisher
+from snapshot_store import SnapshotStore
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +19,13 @@ class MQTTListener:
         frigate_client: FrigateClient,
         hand_recognizer: HandRecognizer,
         publisher: MQTTPublisher,
+        snapshot_store: SnapshotStore | None = None,
     ):
         self._config = config
         self._frigate = frigate_client
         self._recognizer = hand_recognizer
         self._publisher = publisher
+        self._snapshot_store = snapshot_store
         self._client = mqtt.Client()
         self._setup_client()
 
@@ -85,6 +88,10 @@ class MQTTListener:
             return
 
         detections = self._recognizer.recognize(image)
+
+        if self._snapshot_store is not None:
+            self._snapshot_store.add(image, camera, event_id, score, detections)
+
         if not detections:
             logger.info("No hands detected in snapshot for event %s", event_id)
             return

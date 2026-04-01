@@ -9,6 +9,7 @@ from hand_recognizer import HandRecognizer
 from log_handler import InMemoryLogHandler
 from mqtt_listener import MQTTListener
 from mqtt_publisher import MQTTPublisher
+from snapshot_store import SnapshotStore
 from web.server import create_app
 
 log_handler = InMemoryLogHandler()
@@ -26,16 +27,17 @@ logger = logging.getLogger(__name__)
 def main():
     config = load_config()
 
+    snapshot_store = SnapshotStore(max_snapshots=config.get("max_snapshots", 10))
     frigate = FrigateClient(config["frigate_url"])
     recognizer = HandRecognizer()
-    listener = MQTTListener(config, frigate, recognizer, None)  # publisher set below
+    listener = MQTTListener(config, frigate, recognizer, None, snapshot_store)
 
     publisher = MQTTPublisher(listener.mqtt_client, config["output_topic_template"])
     listener._publisher = publisher
 
     listener.start()
 
-    flask_app = create_app(config, log_handler)
+    flask_app = create_app(config, log_handler, snapshot_store)
     web_thread = threading.Thread(
         target=lambda: flask_app.run(
             host="0.0.0.0",

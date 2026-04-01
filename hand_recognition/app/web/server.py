@@ -1,21 +1,17 @@
 import json
 import logging
 
-from flask import Flask, Response, render_template, request, jsonify
+from flask import Flask, Response, render_template, request, jsonify, send_file
 
 from config import load_config, save_config
 from log_handler import InMemoryLogHandler
+from snapshot_store import SnapshotStore
 
 logger = logging.getLogger(__name__)
 
 
 class _ReverseProxied:
-    """Middleware that sets SCRIPT_NAME from the X-Ingress-Path header.
-
-    Home Assistant ingress proxies requests to the add-on under a dynamic
-    path (e.g. /api/hassio_ingress/<token>). Flask needs to know this prefix
-    so url_for() generates correct absolute URLs.
-    """
+    """Middleware that sets SCRIPT_NAME from the X-Ingress-Path header."""
 
     def __init__(self, app):
         self.app = app
@@ -30,7 +26,7 @@ class _ReverseProxied:
         return self.app(environ, start_response)
 
 
-def create_app(config: dict, log_handler: InMemoryLogHandler) -> Flask:
+def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: SnapshotStore) -> Flask:
     app = Flask(__name__, template_folder="templates")
     app.wsgi_app = _ReverseProxied(app.wsgi_app)
     app.config["current_config"] = config
@@ -58,7 +54,7 @@ def create_app(config: dict, log_handler: InMemoryLogHandler) -> Flask:
             cfg = load_config()
 
             str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url", "output_topic_template"]
-            int_fields = ["mqtt_port", "web_ui_port"]
+            int_fields = ["mqtt_port", "web_ui_port", "max_snapshots"]
             float_fields = ["score_threshold"]
 
             for field in str_fields:
@@ -79,6 +75,10 @@ def create_app(config: dict, log_handler: InMemoryLogHandler) -> Flask:
 
             save_config(cfg)
             app.config["current_config"] = cfg
+
+            if "max_snapshots" in data:
+                snapshot_store.update_max(cfg["max_snapshots"])
+
             return jsonify({"status": "ok"})
 
         except Exception as e:
@@ -109,11 +109,8 @@ def create_app(config: dict, log_handler: InMemoryLogHandler) -> Flask:
     @app.get("/api/logs/stream")
     def stream_logs():
         def generate():
-            # Send all buffered entries first
             for entry in log_handler.get_records():
                 yield f"data: {json.dumps(entry)}\n\n"
-
-            # Then stream new entries as they arrive
             q = log_handler.subscribe()
             try:
                 while True:
@@ -121,7 +118,6 @@ def create_app(config: dict, log_handler: InMemoryLogHandler) -> Flask:
                         entry = q.get(timeout=15)
                         yield f"data: {json.dumps(entry)}\n\n"
                     except Exception:
-                        # Timeout — send a keepalive comment to prevent proxy closing
                         yield ": keepalive\n\n"
             finally:
                 log_handler.unsubscribe(q)
@@ -129,10 +125,33 @@ def create_app(config: dict, log_handler: InMemoryLogHandler) -> Flask:
         return Response(
             generate(),
             mimetype="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",   # prevent nginx/HA proxy from buffering
-            },
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
+
+    # ------------------------------------------------------------------ #
+    #  Snapshot routes                                                     #
+    # ------------------------------------------------------------------ #
+
+    @app.get("/api/snapshots")
+    def get_snapshots():
+        return jsonify(snapshot_store.get_all())
+
+    @app.get("/api/snapshots/<snapshot_id>/image")
+    def get_snapshot_image(snapshot_id):
+        s = snapshot_store.get_by_id(snapshot_id)
+        if not s:
+            return jsonify({"error": "Not found"}), 404
+        return send_file(s["image_path"], mimetype="image/jpeg")
+
+    @app.delete("/api/snapshots/<snapshot_id>")
+    def delete_snapshot(snapshot_id):
+        if snapshot_store.delete(snapshot_id):
+            return jsonify({"status": "ok"})
+        return jsonify({"error": "Not found"}), 404
+
+    @app.delete("/api/snapshots")
+    def clear_snapshots():
+        snapshot_store.clear()
+        return jsonify({"status": "ok"})
 
     return app
