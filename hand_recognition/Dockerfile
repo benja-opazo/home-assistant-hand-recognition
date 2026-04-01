@@ -14,7 +14,7 @@ RUN apk add --no-cache \
     && rm -rf /var/cache/apk/*
 
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 COPY app/ .
 
