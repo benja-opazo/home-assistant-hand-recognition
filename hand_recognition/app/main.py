@@ -1,7 +1,7 @@
 import logging
 import threading
 
-from gunicorn.app.base import BaseApplication
+from waitress import serve
 
 from config import load_config
 from frigate_client import FrigateClient
@@ -39,21 +39,8 @@ def main():
 
     flask_app = create_app(config, log_handler, snapshot_store)
 
-    class _GunicornApp(BaseApplication):
-        def load_config(self):
-            self.cfg.set("bind",         f"0.0.0.0:{config['web_ui_port']}")
-            self.cfg.set("worker_class", "gthread")
-            self.cfg.set("workers",      1)
-            self.cfg.set("threads",      8)
-            self.cfg.set("timeout",      0)   # disable worker timeout (SSE streams are long-lived)
-            self.cfg.set("loglevel",     "warning")
-
-        def load(self):
-            return flask_app
-
     logger.info("Web UI available on port %d", config["web_ui_port"])
-    # Run gunicorn on the main thread so it can register its own signal handlers
-    _GunicornApp().run()
+    serve(flask_app, host="0.0.0.0", port=config["web_ui_port"], threads=8)
     listener.stop()
     recognizer.close()
 
