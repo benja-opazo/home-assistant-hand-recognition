@@ -942,7 +942,16 @@
           else                  { selectedIds.delete(s.id); card.classList.remove("snap-selected"); }
           updateBulkBar();
         });
-        card.addEventListener("click", e => { if (!e.target.closest(".snap-card-actions") && !e.target.closest(".snap-check-wrap")) openModal(s); });
+        card.addEventListener("click", e => {
+          if (e.target.closest(".snap-card-actions") || e.target.closest(".snap-check-wrap")) return;
+          if (selectedIds.size > 0) {
+            const cb = card.querySelector(".snap-check");
+            cb.checked = !cb.checked;
+            cb.dispatchEvent(new Event("change", {bubbles: false}));
+          } else {
+            openModal(s);
+          }
+        });
         card.querySelector(".dl").addEventListener("click",  e => { e.stopPropagation(); downloadSnap(s); });
         card.querySelector(".del").addEventListener("click", async e => {
           e.stopPropagation();
