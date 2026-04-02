@@ -301,7 +301,7 @@
       display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; padding: 1rem;
     }
     @media (min-width: 600px) { .modal-body { flex-direction: row; } }
-    .modal-img-wrap { flex: 1.5; }
+    .modal-img-wrap { flex: 1.5; position: relative; }
     .modal-img-wrap img {
       border-radius: 6px; display: block; max-height: 60vh; object-fit: contain; width: 100%;
     }
@@ -320,9 +320,78 @@
     }
     .modal-btn:hover { background: #30363d; color: #e6edf3; }
     .modal-btn.danger:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
+
+    /* ── Snapshot modal nav arrows ─────────────────────────────── */
+    .modal-nav {
+      align-items: center; background: rgba(13,17,23,.75); border: 1px solid #30363d;
+      border-radius: 50%; color: #c9d1d9; cursor: pointer; display: flex;
+      font-size: 1.4rem; height: 2.25rem; justify-content: center; line-height: 1;
+      position: absolute; top: 50%; transform: translateY(-50%);
+      transition: background .15s, color .15s; width: 2.25rem; z-index: 2;
+    }
+    .modal-nav:hover { background: #30363d; color: #fff; }
+    .modal-nav:disabled { cursor: default; opacity: .2; pointer-events: none; }
+    .modal-nav.prev { left: .4rem; }
+    .modal-nav.next { right: .4rem; }
+
+    /* ── Confirm modal ─────────────────────────────────────────── */
+    .confirm-body {
+      color: #c9d1d9; font-size: .9rem; line-height: 1.55;
+      padding: 1.25rem 1.25rem .5rem;
+    }
+    .confirm-footer {
+      border-top: 1px solid #30363d; display: flex;
+      gap: .5rem; justify-content: flex-end; padding: .75rem 1rem;
+    }
+
+    /* ── Power button ──────────────────────────────────────────── */
+    .power-wrap { position: fixed; right: 1rem; top: 1rem; z-index: 200; }
+    .power-btn {
+      align-items: center; background: #21262d; border: 1px solid #30363d;
+      border-radius: 8px; color: #8b949e; cursor: pointer; display: flex;
+      height: 2rem; justify-content: center; transition: background .15s, color .15s;
+      width: 2rem;
+    }
+    .power-btn:hover { background: #30363d; color: #e6edf3; }
+    .power-menu {
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+      display: none; min-width: 130px; overflow: hidden;
+      position: absolute; right: 0; top: calc(100% + 6px);
+    }
+    .power-menu.open { display: block; }
+    .power-menu-item {
+      align-items: center; background: none; border: none; color: #c9d1d9;
+      cursor: pointer; display: flex; font-size: .85rem; gap: .5rem; padding: .55rem .85rem;
+      text-align: left; transition: background .15s; width: 100%;
+    }
+    .power-menu-item:hover { background: #21262d; color: #e6edf3; }
+    .power-menu-item.danger:hover { background: #490202; color: #f85149; }
   </style>
 </head>
 <body>
+
+  <!-- Power button -->
+  <div class="power-wrap" id="power-wrap">
+    <button class="power-btn" id="power-btn" title="Power options">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/>
+      </svg>
+    </button>
+    <div class="power-menu" id="power-menu">
+      <button class="power-menu-item" id="btn-restart">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Restart
+      </button>
+      <button class="power-menu-item danger" id="btn-shutdown">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+        Shutdown
+      </button>
+    </div>
+  </div>
 
   <!-- Tab bar -->
   <div class="tabs">
@@ -644,12 +713,32 @@
         <button class="modal-close" id="modal-close">×</button>
       </div>
       <div class="modal-body">
-        <div class="modal-img-wrap"><img id="modal-img" src="" alt="Snapshot" /></div>
+        <div class="modal-img-wrap">
+          <button class="modal-nav prev" id="modal-prev" title="Previous">&#8249;</button>
+          <img id="modal-img" src="" alt="Snapshot" />
+          <button class="modal-nav next" id="modal-next" title="Next">&#8250;</button>
+        </div>
         <div class="modal-meta" id="modal-meta"></div>
       </div>
       <div class="modal-footer">
         <button class="modal-btn" id="modal-download">Download</button>
         <button class="modal-btn danger" id="modal-delete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Confirm modal ══════════════════════════════════════════════ -->
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-backdrop" id="confirm-backdrop"></div>
+    <div class="modal-content" style="max-width:380px">
+      <div class="modal-header">
+        <span class="modal-title" id="confirm-title">Confirm</span>
+        <button class="modal-close" id="confirm-close">×</button>
+      </div>
+      <p class="confirm-body" id="confirm-message"></p>
+      <div class="confirm-footer">
+        <button class="modal-btn" id="confirm-cancel">Cancel</button>
+        <button class="modal-btn danger" id="confirm-ok">Confirm</button>
       </div>
     </div>
   </div>
@@ -663,6 +752,8 @@
     const URL_SNAPSHOTS      = {{ url_for('get_snapshots')         | tojson }};
     const URL_SNAPS_CLEAR    = {{ url_for('clear_snapshots')       | tojson }};
     const URL_SNAPS_DOWNLOAD = {{ url_for('download_snapshots_zip')| tojson }};
+    const URL_RESTART  = {{ url_for('restart')  | tojson }};
+    const URL_SHUTDOWN = {{ url_for('shutdown') | tojson }};
 
     function snapImageUrl(id)  { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}/image`); }
     function snapDeleteUrl(id) { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}`); }
@@ -846,7 +937,8 @@
     renderFilters(INIT_FILTERS);
 
     // ══ Snapshots ═══════════════════════════════════════════════════
-    let allSnaps = [], activeGestureFilter = "", activeCamFilter = "", modalSnap = null;
+    let allSnaps = [], visibleSnaps = [], activeGestureFilter = "", activeCamFilter = "";
+    let modalSnap = null, modalSnapIndex = -1;
     let selectedIds = new Set();
     const gestureFilter = document.getElementById("gesture-filter");
     const camFilter     = document.getElementById("snap-cam-filter");
@@ -896,10 +988,11 @@
     gestureFilter.addEventListener("change", () => { activeGestureFilter = gestureFilter.value; renderGrid(); });
     camFilter.addEventListener("change",     () => { activeCamFilter     = camFilter.value;     renderGrid(); });
     document.getElementById("btn-refresh-snaps").addEventListener("click", loadSnapshots);
-    document.getElementById("btn-clear-snaps").addEventListener("click", async () => {
-      if (!confirm("Delete all snapshots? This cannot be undone.")) return;
-      await fetch(URL_SNAPS_CLEAR, { method:"DELETE" });
-      allSnaps = []; selectedIds.clear(); renderGrid();
+    document.getElementById("btn-clear-snaps").addEventListener("click", () => {
+      showConfirm("Clear all snapshots", "Delete all snapshots? This cannot be undone.", async () => {
+        await fetch(URL_SNAPS_CLEAR, { method:"DELETE" });
+        allSnaps = []; selectedIds.clear(); renderGrid();
+      });
     });
 
     async function loadSnapshots() {
@@ -945,13 +1038,13 @@
     }
 
     function renderGrid() {
-      const visible = allSnaps.filter(matchSnap);
-      if (!visible.length) {
+      visibleSnaps = allSnaps.filter(matchSnap);
+      if (!visibleSnaps.length) {
         grid.innerHTML = `<div class="snap-empty">No snapshots${allSnaps.length?" match the current filter":" yet"}.</div>`;
         return;
       }
       grid.innerHTML = "";
-      visible.forEach(s => {
+      visibleSnaps.forEach(s => {
         const card = document.createElement("div"); card.className = "snap-card";
         if (selectedIds.has(s.id)) card.classList.add("snap-selected");
         card.innerHTML = `
@@ -985,12 +1078,14 @@
           }
         });
         card.querySelector(".dl").addEventListener("click",  e => { e.stopPropagation(); downloadSnap(s); });
-        card.querySelector(".del").addEventListener("click", async e => {
+        card.querySelector(".del").addEventListener("click", e => {
           e.stopPropagation();
-          await fetch(snapDeleteUrl(s.id), {method:"DELETE"});
-          allSnaps = allSnaps.filter(x => x.id !== s.id);
-          selectedIds.delete(s.id);
-          rebuildSnapFilters(); renderGrid();
+          showConfirm("Delete snapshot", "Delete this snapshot? This cannot be undone.", async () => {
+            await fetch(snapDeleteUrl(s.id), {method:"DELETE"});
+            allSnaps = allSnaps.filter(x => x.id !== s.id);
+            selectedIds.delete(s.id);
+            rebuildSnapFilters(); renderGrid();
+          });
         });
         grid.appendChild(card);
       });
@@ -1002,11 +1097,17 @@
       a.download = `${s.camera}_${s.timestamp.replace(/[: ]/g,"-")}.jpg`; a.click();
     }
 
-    // Modal
-    const modal = document.getElementById("snapshot-modal");
+    // Snapshot modal
+    const modal    = document.getElementById("snapshot-modal");
     const modalImg = document.getElementById("modal-img");
+
+    function updateNavArrows() {
+      document.getElementById("modal-prev").disabled = modalSnapIndex <= 0;
+      document.getElementById("modal-next").disabled = modalSnapIndex >= visibleSnaps.length - 1;
+    }
     function openModal(s) {
-      modalSnap = s;
+      modalSnap      = s;
+      modalSnapIndex = visibleSnaps.findIndex(x => x.id === s.id);
       document.getElementById("modal-title").textContent = `${s.camera} — ${s.timestamp}`;
       modalImg.src = snapImageUrl(s.id);
       const gt = s.detections.length
@@ -1018,18 +1119,40 @@
         <div class="meta-row"><span class="meta-label">Frigate score</span><span class="meta-val">${s.frigate_score}</span></div>
         <div class="meta-row"><span class="meta-label">Event ID</span><span class="meta-val" style="font-size:.75rem;word-break:break-all">${escHtml(s.event_id)}</span></div>
         <div class="meta-row"><span class="meta-label">Gesture(s)</span><span class="meta-val">${gt}</span></div>`;
+      updateNavArrows();
       modal.classList.remove("hidden");
     }
     function closeModal() { modal.classList.add("hidden"); modalSnap = null; modalImg.src = ""; }
+    function navigateModal(dir) {
+      const idx = modalSnapIndex + dir;
+      if (idx >= 0 && idx < visibleSnaps.length) openModal(visibleSnaps[idx]);
+    }
+
+    document.getElementById("modal-prev").addEventListener("click", () => navigateModal(-1));
+    document.getElementById("modal-next").addEventListener("click", () => navigateModal(1));
     document.getElementById("modal-close").addEventListener("click", closeModal);
     document.getElementById("modal-backdrop").addEventListener("click", closeModal);
-    document.addEventListener("keydown", e => { if (e.key==="Escape") closeModal(); });
+    document.addEventListener("keydown", e => {
+      if (modal.classList.contains("hidden")) return;
+      if (e.key === "Escape")      closeModal();
+      if (e.key === "ArrowLeft")   navigateModal(-1);
+      if (e.key === "ArrowRight")  navigateModal(1);
+    });
+    let touchStartX = 0;
+    modal.addEventListener("touchstart", e => { touchStartX = e.touches[0].clientX; }, {passive:true});
+    modal.addEventListener("touchend",   e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 50) navigateModal(dx < 0 ? 1 : -1);
+    }, {passive:true});
+
     document.getElementById("modal-download").addEventListener("click", () => { if (modalSnap) downloadSnap(modalSnap); });
-    document.getElementById("modal-delete").addEventListener("click", async () => {
+    document.getElementById("modal-delete").addEventListener("click", () => {
       if (!modalSnap) return;
-      await fetch(snapDeleteUrl(modalSnap.id), {method:"DELETE"});
-      allSnaps = allSnaps.filter(x => x.id !== modalSnap.id);
-      rebuildSnapFilters(); renderGrid(); closeModal();
+      showConfirm("Delete snapshot", "Delete this snapshot? This cannot be undone.", async () => {
+        await fetch(snapDeleteUrl(modalSnap.id), {method:"DELETE"});
+        allSnaps = allSnaps.filter(x => x.id !== modalSnap.id);
+        rebuildSnapFilters(); renderGrid(); closeModal();
+      });
     });
 
     // ══ Logs ════════════════════════════════════════════════════════
@@ -1078,11 +1201,13 @@
       paused = !paused; this.textContent = paused?"Resume":"Pause"; this.classList.toggle("active",paused);
       if (!paused) logContainer.scrollTop = logContainer.scrollHeight;
     });
-    document.getElementById("btn-clear-logs").addEventListener("click", async () => {
-      await fetch(URL_LOGS_CLEAR,{method:"DELETE"});
-      allEntries=[]; knownSources.clear(); entryCount=0; logContainer.innerHTML="";
-      sourceFilter.innerHTML='<option value="">All sources</option>'; activeSource="";
-      logStatus.textContent="Cleared";
+    document.getElementById("btn-clear-logs").addEventListener("click", () => {
+      showConfirm("Clear logs", "Clear all log entries?", async () => {
+        await fetch(URL_LOGS_CLEAR,{method:"DELETE"});
+        allEntries=[]; knownSources.clear(); entryCount=0; logContainer.innerHTML="";
+        sourceFilter.innerHTML='<option value="">All sources</option>'; activeSource="";
+        logStatus.textContent="Cleared";
+      });
     });
     document.getElementById("btn-download-logs").addEventListener("click", () => {
       const lines = allEntries.filter(logOk).map(e=>`${e.timestamp} [${e.level}] ${e.source}: ${e.message}`).join("\n");
@@ -1167,6 +1292,42 @@
         status.textContent = "Network error: " + err.message;
         status.className = "save-status err";
       }
+    });
+
+    // ── Confirm modal ───────────────────────────────────────────────
+    const confirmModal = document.getElementById("confirm-modal");
+    let confirmCallback = null;
+    function showConfirm(title, message, onConfirm) {
+      document.getElementById("confirm-title").textContent   = title;
+      document.getElementById("confirm-message").textContent = message;
+      confirmCallback = onConfirm;
+      confirmModal.classList.remove("hidden");
+    }
+    function closeConfirm() { confirmModal.classList.add("hidden"); confirmCallback = null; }
+    document.getElementById("confirm-close").addEventListener("click", closeConfirm);
+    document.getElementById("confirm-cancel").addEventListener("click", closeConfirm);
+    document.getElementById("confirm-backdrop").addEventListener("click", closeConfirm);
+    document.getElementById("confirm-ok").addEventListener("click", () => {
+      const cb = confirmCallback; closeConfirm(); if (cb) cb();
+    });
+
+    // ── Power button ────────────────────────────────────────────────
+    const powerMenu = document.getElementById("power-menu");
+    document.getElementById("power-btn").addEventListener("click", e => {
+      e.stopPropagation(); powerMenu.classList.toggle("open");
+    });
+    document.addEventListener("click", () => powerMenu.classList.remove("open"));
+    document.getElementById("btn-restart").addEventListener("click", () => {
+      powerMenu.classList.remove("open");
+      showConfirm("Restart", "Restart the add-on?", async () => {
+        await fetch(URL_RESTART, {method:"POST"});
+      });
+    });
+    document.getElementById("btn-shutdown").addEventListener("click", () => {
+      powerMenu.classList.remove("open");
+      showConfirm("Shutdown", "Stop the add-on? You will need to start it manually.", async () => {
+        await fetch(URL_SHUTDOWN, {method:"POST"});
+      });
     });
 
     // ── Shared helpers ──────────────────────────────────────────────

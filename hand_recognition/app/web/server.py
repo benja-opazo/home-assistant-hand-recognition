@@ -2,7 +2,10 @@ import io
 import json
 import logging
 import os
+import threading
 import zipfile
+
+import requests as http
 
 from flask import Flask, Response, render_template, request, jsonify, send_file
 
@@ -179,6 +182,37 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
     def clear_snapshots():
         snapshot_store.clear()
         return jsonify({"status": "ok"})
+
+    # ------------------------------------------------------------------ #
+    #  Power routes                                                        #
+    # ------------------------------------------------------------------ #
+
+    def _supervisor_call(path: str) -> bool:
+        token = os.environ.get("SUPERVISOR_TOKEN", "")
+        if not token:
+            return False
+        try:
+            http.post(
+                f"http://supervisor/addons/self/{path}",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=5,
+            )
+            return True
+        except Exception as e:
+            logger.error("Supervisor call '%s' failed: %s", path, e)
+            return False
+
+    @app.post("/api/restart")
+    def restart():
+        if not _supervisor_call("restart"):
+            threading.Timer(0.3, lambda: os._exit(1)).start()
+        return jsonify({"status": "restarting"})
+
+    @app.post("/api/shutdown")
+    def shutdown():
+        if not _supervisor_call("stop"):
+            threading.Timer(0.3, lambda: os._exit(0)).start()
+        return jsonify({"status": "stopping"})
 
     @app.post("/api/snapshots/download")
     def download_snapshots_zip():

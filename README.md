@@ -72,6 +72,49 @@ These are the values that appear in the `gesture` field of the MQTT payload.
 | `pinky` | Pinky finger only extended |
 | `unknown` | A hand was detected but the finger combination did not match any of the above |
 
+## Tips for Improving Hand Detection
+
+### Snapshot resolution is tied to Frigate's detect stream
+
+The add-on fetches snapshots via the Frigate API (`/api/events/{id}/snapshot.jpg` or `/api/{camera}/latest.jpg`). These images are sourced from Frigate's **detect stream**, not the camera's full resolution recording stream. If detection feels unreliable — especially when the subject is not directly in front of the camera — low snapshot resolution is usually the cause.
+
+The best approach is to configure Frigate to use your camera's **main (high-resolution) stream** as the detect input and let Frigate downscale it to a resolution your device can handle:
+
+```yaml
+cameras:
+  your_camera:
+    ffmpeg:
+      inputs:
+        - path: rtsp://user:password@camera-ip:554/main_stream
+          roles:
+            - detect
+            - record
+    detect:
+      width: 1280
+      height: 720
+```
+
+This ensures snapshots are taken from the best available source while keeping detection at a resolution appropriate for your hardware. On a Raspberry Pi 4, 1280×720 is a reasonable target. Avoid running detection at 4K — the CPU cost is high and it provides no meaningful benefit over a well-scaled 720p or 1080p stream.
+
+> [!NOTE]
+> Frigate snapshots are always sourced from the detect stream regardless of what other streams are configured. There is no separate `snapshots` role in current Frigate versions.
+
+### Snapshot quality and cropping
+
+The **Connections** tab exposes three Frigate API parameters that affect what the add-on receives:
+
+| Setting | Effect |
+|---------|--------|
+| **Snapshot quality** | JPEG compression (1–100, default 70). Higher values preserve more detail for MediaPipe. |
+| **Snapshot height** | Resize the image to this height before recognition. Set to `0` for full detect-stream resolution. |
+| **Crop to bounding box** | Asks Frigate to crop the image to the detected object region, making the subject larger in frame. Particularly useful when the person is small or off to the side. Only works during active events. |
+
+### MediaPipe confidence threshold
+
+If hands are missed when the subject is at an angle or partially out of frame, lowering `mediapipe_min_detection_confidence` (default `0.5`) to around `0.35`–`0.4` can help. This makes the model more willing to report a detection at the cost of slightly more false positives.
+
+---
+
 ## Home Assistant Automation Example
 
 The following automation turns on a light when an open palm is detected on the front door camera.
