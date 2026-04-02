@@ -89,21 +89,30 @@ class MQTTListener:
                 return
 
         event_id, camera, score = self._extract_event_info(payload)
+        mode = self._config.get("frigate_snapshot_mode", "event")
 
-        if not event_id:
-            logger.warning(
-                "Could not extract event ID from message on topic '%s'.\n"
-                "Payload: %s",
-                msg.topic, json.dumps(payload, indent=2),
-            )
-            return
+        if mode == "latest_frame":
+            if not camera:
+                logger.warning(
+                    "latest_frame mode requires a camera name but none found in message "
+                    "on topic '%s'.\nPayload: %s",
+                    msg.topic, json.dumps(payload, indent=2),
+                )
+                return
+        else:
+            if not event_id:
+                logger.warning(
+                    "Could not extract event ID from message on topic '%s'.\n"
+                    "Payload: %s",
+                    msg.topic, json.dumps(payload, indent=2),
+                )
+                return
 
         logger.info(
-            "Processing event %s on camera '%s' (score=%.3f)",
-            event_id, camera or "unknown", score,
+            "Processing message on topic '%s' — camera='%s' event_id=%s (score=%.3f)",
+            msg.topic, camera or "unknown", event_id or "N/A", score,
         )
 
-        mode = self._config.get("frigate_snapshot_mode", "event")
         image = self._frigate.get_snapshot(event_id, camera=camera, mode=mode)
         if image is None:
             return

@@ -29,7 +29,7 @@ class SnapshotStore:
         self,
         image: np.ndarray,
         camera: str,
-        event_id: str,
+        event_id: str | None,
         frigate_score: float,
         detections: list[dict],
     ) -> dict:
@@ -41,7 +41,7 @@ class SnapshotStore:
             "id": snapshot_id,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "camera": camera,
-            "event_id": event_id,
+            "event_id": event_id or "",
             "frigate_score": round(frigate_score, 3),
             "detections": detections,
             "image_path": image_path,
