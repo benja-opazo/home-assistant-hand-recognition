@@ -59,7 +59,9 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
             str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url",
                           "output_topic_template", "mqtt_topic", "frigate_snapshot_mode"]
             int_fields = ["mqtt_port", "web_ui_port", "max_snapshots",
-                          "mediapipe_max_num_hands", "mediapipe_model_complexity"]
+                          "mediapipe_max_num_hands", "mediapipe_model_complexity",
+                          "frigate_snapshot_quality", "frigate_snapshot_height",
+                          "frigate_snapshot_crop"]
             float_fields = ["mediapipe_min_detection_confidence"]
 
             for field in float_fields:

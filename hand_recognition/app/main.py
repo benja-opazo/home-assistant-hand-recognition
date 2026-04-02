@@ -4,6 +4,7 @@ import threading
 from waitress import serve
 
 from config import load_config
+from event_processor import EventProcessor
 from frigate_client import FrigateClient
 from hand_recognizer import HandRecognizer
 from log_handler import InMemoryLogHandler
@@ -28,12 +29,15 @@ def main():
     config = load_config()
 
     snapshot_store = SnapshotStore(max_snapshots=config.get("max_snapshots", 10))
-    frigate = FrigateClient(config["frigate_url"])
-    recognizer = HandRecognizer(config)
-    listener = MQTTListener(config, frigate, recognizer, None, snapshot_store)
+    frigate        = FrigateClient(config["frigate_url"])
+    recognizer     = HandRecognizer(config)
 
+    # Listener is created first so its mqtt_client is available for the publisher.
+    listener  = MQTTListener(config)
     publisher = MQTTPublisher(listener.mqtt_client, config["output_topic_template"])
-    listener._publisher = publisher
+    processor = EventProcessor(config, frigate, recognizer, publisher, snapshot_store)
+
+    listener.on_event = processor.process
 
     threading.Thread(target=listener.start, daemon=True).start()
 

@@ -395,6 +395,35 @@
           </label>
         </div>
 
+        <p class="section-title">Frigate API — Image settings</p>
+        <div class="field">
+          <label for="frigate_snapshot_quality">Snapshot quality (1–100)</label>
+          <input id="frigate_snapshot_quality" name="frigate_snapshot_quality" type="number" min="1" max="100"
+            value="{{ config.frigate_snapshot_quality | default(70) }}" />
+          <span class="hint">JPEG quality requested from Frigate (default 70). Higher values give MediaPipe
+            more detail but increase download size. For event snapshots this only applies while the event
+            is still in progress.</span>
+        </div>
+        <div class="field">
+          <label for="frigate_snapshot_height">Snapshot height in pixels (0 = full resolution)</label>
+          <input id="frigate_snapshot_height" name="frigate_snapshot_height" type="number" min="0"
+            value="{{ config.frigate_snapshot_height | default(0) }}" />
+          <span class="hint">Resize the image to this height before running hand recognition (aspect ratio
+            preserved). 0 = full camera resolution. Reducing this speeds up downloads; full resolution
+            gives MediaPipe the most detail for distant or off-axis hands.</span>
+        </div>
+        <div class="field">
+          <label style="flex-direction:row;align-items:center;gap:.5rem;cursor:pointer">
+            <input type="checkbox" name="frigate_snapshot_crop" value="1"
+              {{ 'checked' if config.frigate_snapshot_crop else '' }} />
+            Crop to detected object bounding box
+          </label>
+          <span class="hint">Asks Frigate to crop the snapshot to the bounding box of the detected object
+            before running hand recognition. Makes the person fill more of the frame, which significantly
+            improves detection at a distance or when the subject is off-axis.
+            Only applies in <strong>Event snapshot</strong> mode and only while the event is in progress.</span>
+        </div>
+
         <p class="section-title">Output</p>
         <div class="field">
           <label for="output_topic_template">MQTT topic template</label>
@@ -682,7 +711,9 @@
       // Radio groups not included in FormData when nothing is checked — ensure key exists
       const modeRadio = e.target.querySelector("input[name='frigate_snapshot_mode']:checked");
       if (modeRadio) data["frigate_snapshot_mode"] = modeRadio.value;
-      ["mqtt_port","web_ui_port","max_snapshots"].forEach(k => { data[k] = parseInt(data[k],10); });
+      const cropBox = e.target.querySelector("input[name='frigate_snapshot_crop']");
+      if (cropBox) data["frigate_snapshot_crop"] = cropBox.checked ? 1 : 0;
+      ["mqtt_port","web_ui_port","max_snapshots","frigate_snapshot_quality","frigate_snapshot_height"].forEach(k => { if (k in data) data[k] = parseInt(data[k],10); });
       status.textContent = "Saving…"; status.className = "save-status";
       try {
         const res  = await fetch(URL_CONFIG, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data) });

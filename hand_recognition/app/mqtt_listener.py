@@ -1,30 +1,28 @@
 import json
 import logging
+from typing import Callable
+
 import paho.mqtt.client as mqtt
 import yaml
-
-from frigate_client import FrigateClient
-from hand_recognizer import HandRecognizer
-from mqtt_publisher import MQTTPublisher
-from snapshot_store import SnapshotStore
 
 logger = logging.getLogger(__name__)
 
 
 class MQTTListener:
+    """Connects to an MQTT broker, applies configured filters to incoming messages,
+    and calls ``on_event`` with (event_id, camera, score) for each message that passes.
+
+    All downstream processing (image fetching, recognition, publishing) is the
+    responsibility of the ``on_event`` callback.
+    """
+
     def __init__(
         self,
         config: dict,
-        frigate_client: FrigateClient,
-        hand_recognizer: HandRecognizer,
-        publisher: MQTTPublisher,
-        snapshot_store: SnapshotStore | None = None,
+        on_event: Callable[[str | None, str | None, float], None] | None = None,
     ):
         self._config = config
-        self._frigate = frigate_client
-        self._recognizer = hand_recognizer
-        self._publisher = publisher
-        self._snapshot_store = snapshot_store
+        self.on_event = on_event
         self._client = mqtt.Client()
         self._setup_client()
 
@@ -65,7 +63,6 @@ class MQTTListener:
         try:
             payload = json.loads(raw)
         except json.JSONDecodeError:
-            # Some Frigate topics (e.g. tracked_object_update) publish YAML instead of JSON
             try:
                 payload = yaml.safe_load(raw)
                 if not isinstance(payload, dict):
@@ -79,7 +76,6 @@ class MQTTListener:
                 )
                 return
 
-        # Apply every configured filter — all must pass
         for f in self._config.get("topic_filters", []):
             if not self._apply_filter(payload, f):
                 logger.debug(
@@ -89,44 +85,16 @@ class MQTTListener:
                 return
 
         event_id, camera, score = self._extract_event_info(payload)
-        mode = self._config.get("frigate_snapshot_mode", "event")
-
-        if mode == "latest_frame":
-            if not camera:
-                logger.warning(
-                    "latest_frame mode requires a camera name but none found in message "
-                    "on topic '%s'.\nPayload: %s",
-                    msg.topic, json.dumps(payload, indent=2),
-                )
-                return
-        else:
-            if not event_id:
-                logger.warning(
-                    "Could not extract event ID from message on topic '%s'.\n"
-                    "Payload: %s",
-                    msg.topic, json.dumps(payload, indent=2),
-                )
-                return
 
         logger.info(
-            "Processing message on topic '%s' — camera='%s' event_id=%s (score=%.3f)",
+            "Event passed filters on topic '%s' — camera='%s' event_id=%s (score=%.3f)",
             msg.topic, camera or "unknown", event_id or "N/A", score,
         )
 
-        image = self._frigate.get_snapshot(event_id, camera=camera, mode=mode)
-        if image is None:
-            return
-
-        detections = self._recognizer.recognize(image)
-
-        if self._snapshot_store is not None:
-            self._snapshot_store.add(image, camera or "unknown", event_id, score, detections)
-
-        if not detections:
-            logger.info("No hands detected in snapshot for event %s", event_id)
-            return
-
-        self._publisher.publish(camera or "unknown", detections)
+        if self.on_event:
+            self.on_event(event_id, camera, score)
+        else:
+            logger.warning("No event handler registered, dropping message from topic '%s'", msg.topic)
 
     # ------------------------------------------------------------------ #
     #  Filter helpers                                                      #
@@ -165,10 +133,10 @@ class MQTTListener:
         actual_str = str(actual)
         raw_str    = str(raw)
 
-        if comparator == "==":          return actual_str == raw_str
-        if comparator == "!=":          return actual_str != raw_str
-        if comparator == "contains":    return raw_str.lower() in actual_str.lower()
-        if comparator == "not contains":return raw_str.lower() not in actual_str.lower()
+        if comparator == "==":           return actual_str == raw_str
+        if comparator == "!=":           return actual_str != raw_str
+        if comparator == "contains":     return raw_str.lower() in actual_str.lower()
+        if comparator == "not contains": return raw_str.lower() not in actual_str.lower()
 
         return True
 

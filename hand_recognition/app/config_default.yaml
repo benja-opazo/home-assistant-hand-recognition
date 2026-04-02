@@ -4,6 +4,22 @@ mqtt_username: ""
 mqtt_password: ""
 frigate_url: http://ccab4aaf-frigate:5000
 frigate_snapshot_mode: "event"
+
+# JPEG quality requested from Frigate (1–100). Higher values give MediaPipe more
+# detail but increase download size. Frigate's built-in default is 70.
+# For event snapshots, this only applies while the event is still in progress.
+frigate_snapshot_quality: 70
+
+# Resize the snapshot to this height in pixels (aspect ratio preserved).
+# 0 = full camera resolution. Reducing this speeds up downloads; keeping full
+# resolution gives MediaPipe the most detail for distant or off-axis hands.
+frigate_snapshot_height: 0
+
+# Crop the event snapshot to Frigate's detected object bounding box before running
+# hand recognition. Makes the person fill more of the frame, which significantly
+# improves detection at a distance or when the subject is off-axis.
+# Only applies in Event snapshot mode and only while the event is in progress.
+frigate_snapshot_crop: false
 output_topic_template: "hand-recognition/{camera}"
 web_ui_port: 8099
 max_snapshots: 100
