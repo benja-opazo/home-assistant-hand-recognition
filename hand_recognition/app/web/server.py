@@ -54,7 +54,7 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
             cfg = load_config()
 
             str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url",
-                          "output_topic_template", "mqtt_topic"]
+                          "output_topic_template", "mqtt_topic", "frigate_snapshot_mode"]
             int_fields = ["mqtt_port", "web_ui_port", "max_snapshots"]
 
             for field in str_fields:

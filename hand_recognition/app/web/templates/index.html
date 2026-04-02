@@ -325,6 +325,37 @@
           <input id="frigate_url" name="frigate_url" type="text" value="{{ config.frigate_url }}" />
         </div>
 
+        <p class="section-title">Frigate API — Snapshot source</p>
+
+        <div class="topic-options">
+          <label class="topic-option">
+            <div class="topic-option-header">
+              <input type="radio" name="frigate_snapshot_mode" value="event"
+                {{ 'checked' if config.frigate_snapshot_mode in ('event', None, '') else '' }} />
+              <span class="topic-option-name">Event snapshot</span>
+            </div>
+            <div class="topic-option-desc">
+              <code>GET /api/events/{event_id}/snapshot.jpg</code><br>
+              Returns the stored snapshot tied to the detection event. The image is the best
+              frame Frigate selected at the time of the event.
+            </div>
+          </label>
+
+          <label class="topic-option">
+            <div class="topic-option-header">
+              <input type="radio" name="frigate_snapshot_mode" value="latest_frame"
+                {{ 'checked' if config.frigate_snapshot_mode == 'latest_frame' else '' }} />
+              <span class="topic-option-name">Latest frame</span>
+            </div>
+            <div class="topic-option-desc">
+              <code>GET /api/{camera_name}/latest.jpg</code><br>
+              Returns the most recent frame from the camera at the moment the message is
+              processed. More current than the event snapshot but not tied to the specific
+              detection moment.
+            </div>
+          </label>
+        </div>
+
         <p class="section-title">Output</p>
         <div class="field">
           <label for="output_topic_template">MQTT topic template</label>
@@ -535,6 +566,9 @@
       e.preventDefault();
       const status = document.getElementById("config-status");
       const data = Object.fromEntries(new FormData(e.target).entries());
+      // Radio groups not included in FormData when nothing is checked — ensure key exists
+      const modeRadio = e.target.querySelector("input[name='frigate_snapshot_mode']:checked");
+      if (modeRadio) data["frigate_snapshot_mode"] = modeRadio.value;
       ["mqtt_port","web_ui_port","max_snapshots"].forEach(k => { data[k] = parseInt(data[k],10); });
       status.textContent = "Saving…"; status.className = "save-status";
       try {

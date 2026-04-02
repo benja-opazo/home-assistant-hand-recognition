@@ -103,7 +103,8 @@ class MQTTListener:
             event_id, camera or "unknown", score,
         )
 
-        image = self._frigate.get_snapshot(event_id)
+        mode = self._config.get("frigate_snapshot_mode", "event")
+        image = self._frigate.get_snapshot(event_id, camera=camera, mode=mode)
         if image is None:
             return
 
