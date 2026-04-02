@@ -736,6 +736,23 @@
     </div>
   </div>
 
+  <!-- ══ Restart countdown modal ═══════════════════════════════════ -->
+  <div id="restart-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content" style="max-width:340px;text-align:center">
+      <div class="modal-header" style="justify-content:center">
+        <span class="modal-title">Restarting…</span>
+      </div>
+      <div style="padding:1.5rem 1.25rem">
+        <p style="color:#8b949e;font-size:.88rem;margin-bottom:1.25rem">
+          The add-on is restarting. This page will reload automatically.
+        </p>
+        <div id="restart-countdown" style="color:#58a6ff;font-size:2.75rem;font-weight:700;line-height:1;margin-bottom:1.25rem">10</div>
+        <button class="modal-btn" id="btn-reload-now" style="width:100%">Refresh now</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ Confirm modal ══════════════════════════════════════════════ -->
   <div id="confirm-modal" class="modal hidden">
     <div class="modal-backdrop" id="confirm-backdrop"></div>
@@ -1335,10 +1352,27 @@
       e.stopPropagation(); powerMenu.classList.toggle("open");
     });
     document.addEventListener("click", () => powerMenu.classList.remove("open"));
+    function showRestartCountdown() {
+      const restartModal = document.getElementById("restart-modal");
+      const countdownEl  = document.getElementById("restart-countdown");
+      restartModal.classList.remove("hidden");
+      let n = 10;
+      countdownEl.textContent = n;
+      const timer = setInterval(() => {
+        n--;
+        countdownEl.textContent = n;
+        if (n <= 0) { clearInterval(timer); location.reload(); }
+      }, 1000);
+      document.getElementById("btn-reload-now").addEventListener("click", () => {
+        clearInterval(timer); location.reload();
+      }, {once: true});
+    }
+
     document.getElementById("btn-restart").addEventListener("click", () => {
       powerMenu.classList.remove("open");
       showConfirm("Restart", "Restart the add-on?", async () => {
         await fetch(URL_RESTART, {method:"POST"});
+        showRestartCountdown();
       });
     });
     document.getElementById("btn-shutdown").addEventListener("click", () => {
