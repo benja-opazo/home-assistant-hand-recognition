@@ -1,14 +1,14 @@
 > [!NOTE]
-> This aApp is almost completely vibed coded. I wanted to have a simple interface for Hand Recognition and Double Take wasn't really working for me. After understanding the problem at hand, I noticed that the project structure was going to be very simple, so I gave Claude a shot.
-
+> This App is almost completely Vibed Coded. I wanted to have a simple interface for Hand Recognition and [Double Take](https://github.com/skrashevich/double-take) wasn't really working for me. After understanding the problem at hand, I noticed that the project structure was going to be very simple, so I gave Claude a shot.
 > I made this app for my personal use, but I am sharing it because it works perfectly for my use case, and maybe its useful for others.
-
 > If you have an issue with the app being Vibe Coded, please refrain to make any comments. Thanks.
 
 # Home Assistant Hand Recognition Add-on
 
-Detects and classifies hand gestures from Frigate camera snapshots using MediaPipe.
+Detects and classifies hand gestures from [Frigate](https://github.com/blakeblackshear/frigate) camera snapshots using [MediaPipe](https://github.com/google-ai-edge/mediapipe).
 When a gesture is recognized, it publishes the result to an MQTT topic so Home Assistant automations can react to it.
+
+![UI](./imgs/ui.png)
 
 ## Installation
 
@@ -17,6 +17,9 @@ When a gesture is recognized, it publishes the result to an MQTT topic so Home A
 3. Add: `https://github.com/benja-opazo/home-assistant-hand-recognition`
 4. Install the **Hand Recognition** add-on and start it.
 5. Open the web UI from the add-on page to configure connections and detection settings.
+
+> ![TIP]
+> The installation takes a while, because the Home Assistant has to build the Docker image. Be patient
 
 ## Configuration
 
@@ -29,6 +32,8 @@ The web UI has five tabs:
 | Detection | MQTT topic to subscribe to, plus configurable message filters (property, comparator, value) for routing events. |
 | MediaPipe | Toggle individual gestures on/off and adjust model settings (confidence threshold, max hands, model complexity). |
 | Logs | Live log stream with level and source filters, pause, clear, and download. |
+
+The default configuration should work out of the box, except for the MQTT credentials that have to be configured.
 
 ## MQTT Output
 
@@ -47,7 +52,7 @@ When a gesture is detected, the add-on publishes to the configured topic (defaul
 }
 ```
 
-If no hands are detected in the snapshot, nothing is published.
+If no hands are detected in the snapshot, **nothing is published**.
 
 ## Supported Gestures
 
@@ -72,22 +77,23 @@ These are the values that appear in the `gesture` field of the MQTT payload.
 The following automation turns on a light when an open palm is detected on the front door camera.
 
 ```yaml
-alias: Open palm detected on front door
-trigger:
-  - platform: mqtt
-    topic: hand-recognition/front_door
-condition:
+alias: Open palm detected on front door by Recognized Person
+triggers:
+  - topic: hand-recognition/front-door
+    trigger: mqtt
+conditions:
   - condition: template
-    value_template: >
-      {{ trigger.payload_json.detections
-         | selectattr('gesture', 'eq', 'open_palm')
-         | list | length > 0 }}
+    value_template: >-
+      {{ trigger.payload_json.detections[0].gesture in ['open_palm',
+      'four_fingers', 'three_fingers'] }}
 action:
   - service: light.turn_on
     target:
       entity_id: light.front_porch
 mode: single
 ```
+
+Notice that in the previous configuration, the camera name in  `hand-recognition/<camera_name>` is obtained from the Frigate MQTT Notification, which is obtained from the camera configuration. This is usefull if there are more than one camera added to the Frigate App and some actions (e.g.: open palm, open front door) are place specific.
 
 To act on any gesture from any camera, use a wildcard topic and reference the camera and gesture from the payload:
 
