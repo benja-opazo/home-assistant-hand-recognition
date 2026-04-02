@@ -271,6 +271,11 @@
       border-color: #58a6ff;
       background: #0d1e3a;
     }
+    @keyframes snap-glow {
+      0%   { border-color: #58a6ff; box-shadow: 0 0 8px 3px rgba(88,166,255,.55); }
+      100% { border-color: #30363d; box-shadow: none; }
+    }
+    .snap-card.snap-new { animation: snap-glow 2s ease-out forwards; }
 
     /* ── Modal ─────────────────────────────────────────────────── */
     .modal {
@@ -325,7 +330,7 @@
     .modal-nav {
       align-items: center; background: rgba(13,17,23,.75); border: 1px solid #30363d;
       border-radius: 50%; color: #c9d1d9; cursor: pointer; display: flex;
-      font-size: 1.4rem; height: 2.25rem; justify-content: center; line-height: 1;
+      height: 2.25rem; justify-content: center;
       position: absolute; top: 50%; transform: translateY(-50%);
       transition: background .15s, color .15s; width: 2.25rem; z-index: 2;
     }
@@ -714,9 +719,13 @@
       </div>
       <div class="modal-body">
         <div class="modal-img-wrap">
-          <button class="modal-nav prev" id="modal-prev" title="Previous">&#8249;</button>
+          <button class="modal-nav prev" id="modal-prev" title="Previous">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
           <img id="modal-img" src="" alt="Snapshot" />
-          <button class="modal-nav next" id="modal-next" title="Next">&#8250;</button>
+          <button class="modal-nav next" id="modal-next" title="Next">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
         <div class="modal-meta" id="modal-meta"></div>
       </div>
@@ -937,7 +946,8 @@
     renderFilters(INIT_FILTERS);
 
     // ══ Snapshots ═══════════════════════════════════════════════════
-    let allSnaps = [], visibleSnaps = [], activeGestureFilter = "", activeCamFilter = "";
+    let allSnaps = [], visibleSnaps = [], newSnapIds = new Set(), isFirstLoad = true;
+    let activeGestureFilter = "", activeCamFilter = "";
     let modalSnap = null, modalSnapIndex = -1;
     let selectedIds = new Set();
     const gestureFilter = document.getElementById("gesture-filter");
@@ -996,8 +1006,15 @@
     });
 
     async function loadSnapshots() {
+      const prevIds = new Set(allSnaps.map(s => s.id));
       const res = await fetch(URL_SNAPSHOTS);
       allSnaps  = await res.json();
+      if (isFirstLoad) {
+        newSnapIds = new Set();
+        isFirstLoad = false;
+      } else {
+        newSnapIds = new Set(allSnaps.filter(s => !prevIds.has(s.id)).map(s => s.id));
+      }
       rebuildSnapFilters(); renderGrid();
     }
 
@@ -1047,6 +1064,7 @@
       visibleSnaps.forEach(s => {
         const card = document.createElement("div"); card.className = "snap-card";
         if (selectedIds.has(s.id)) card.classList.add("snap-selected");
+        if (newSnapIds.has(s.id))  card.classList.add("snap-new");
         card.innerHTML = `
           <div class="snap-check-wrap">
             <input type="checkbox" class="snap-check" title="Select" ${selectedIds.has(s.id) ? "checked" : ""} />
