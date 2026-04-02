@@ -1,6 +1,8 @@
 > [!NOTE]
-> This app is almost completely vibed coded, I wanted to have a simple interface for Hand Recognition and Double Take wasn't really working for me. After understanding the problem at hand, I noticed that the project structure was going to be very simple, so I gave Claude a shot.
+> This aApp is almost completely vibed coded. I wanted to have a simple interface for Hand Recognition and Double Take wasn't really working for me. After understanding the problem at hand, I noticed that the project structure was going to be very simple, so I gave Claude a shot.
+
 > I made this app for my personal use, but I am sharing it because it works perfectly for my use case, and maybe its useful for others.
+
 > If you have an issue with the app being Vibe Coded, please refrain to make any comments. Thanks.
 
 # Home Assistant Hand Recognition Add-on
