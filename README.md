@@ -18,7 +18,7 @@ When a gesture is recognized, it publishes the result to an MQTT topic so Home A
 4. Install the **Hand Recognition** add-on and start it.
 5. Open the web UI from the add-on page to configure connections and detection settings.
 
-> ![TIP]
+> [!TIP]
 > The installation takes a while, because the Home Assistant has to build the Docker image. Be patient
 
 ## Configuration
