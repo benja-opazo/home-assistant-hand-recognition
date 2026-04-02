@@ -1,6 +1,4 @@
 import logging
-import signal
-import sys
 import threading
 
 from gunicorn.app.base import BaseApplication
@@ -37,7 +35,7 @@ def main():
     publisher = MQTTPublisher(listener.mqtt_client, config["output_topic_template"])
     listener._publisher = publisher
 
-    listener.start()
+    threading.Thread(target=listener.start, daemon=True).start()
 
     flask_app = create_app(config, log_handler, snapshot_store)
 
@@ -53,19 +51,11 @@ def main():
         def load(self):
             return flask_app
 
-    web_thread = threading.Thread(target=_GunicornApp().run, daemon=True)
-    web_thread.start()
     logger.info("Web UI available on port %d", config["web_ui_port"])
-
-    def _shutdown(sig, frame):
-        logger.info("Shutting down...")
-        listener.stop()
-        recognizer.close()
-        sys.exit(0)
-
-    signal.signal(signal.SIGTERM, _shutdown)
-    signal.signal(signal.SIGINT, _shutdown)
-    signal.pause()
+    # Run gunicorn on the main thread so it can register its own signal handlers
+    _GunicornApp().run()
+    listener.stop()
+    recognizer.close()
 
 
 if __name__ == "__main__":
