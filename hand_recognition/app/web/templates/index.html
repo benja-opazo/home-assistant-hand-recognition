@@ -238,6 +238,40 @@
     .snap-icon-btn:hover     { background: #30363d; color: #e6edf3; }
     .snap-icon-btn.del:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
 
+    /* ── Bulk action bar ───────────────────────────────────────── */
+    .bulk-bar {
+      align-items: center; background: #0d2044; border-top: 1px solid #1f6feb;
+      display: none; flex-wrap: wrap; gap: .6rem; padding: .55rem 1rem;
+    }
+    .bulk-bar.visible { display: flex; }
+    .bulk-count { color: #58a6ff; font-size: .82rem; font-weight: 600; margin-right: .25rem; }
+    .bulk-btn {
+      background: #21262d; border: 1px solid #30363d; border-radius: 6px;
+      color: #c9d1d9; cursor: pointer; font-size: .8rem; padding: 3px 12px;
+      transition: background .15s;
+    }
+    .bulk-btn:hover       { background: #30363d; color: #e6edf3; }
+    .bulk-btn.danger:hover{ background: #b91c1c; border-color: #f85149; color: #fff; }
+    .bulk-btn.deselect    { margin-left: auto; color: #8b949e; }
+
+    /* ── Card checkbox ─────────────────────────────────────────── */
+    .snap-check-wrap {
+      position: absolute; top: .4rem; right: .4rem; z-index: 3;
+    }
+    .snap-check {
+      accent-color: #58a6ff; cursor: pointer; height: 1rem; width: 1rem;
+      opacity: 0; transition: opacity .15s;
+    }
+    /* Show on hover, when checked, or when selection mode is active */
+    .snap-card:hover .snap-check,
+    .snap-check:checked { opacity: 1; }
+    .selection-active .snap-check { opacity: 1; }
+
+    .snap-card.snap-selected {
+      border-color: #58a6ff;
+      background: #0d1e3a;
+    }
+
     /* ── Modal ─────────────────────────────────────────────────── */
     .modal {
       align-items: center; bottom: 0; display: flex; justify-content: center;
@@ -469,6 +503,13 @@
           <button class="action-btn danger" id="btn-clear-snaps">Clear all</button>
         </div>
       </div>
+      <!-- Bulk action bar (shown when ≥1 card is selected) -->
+      <div class="bulk-bar" id="bulk-bar">
+        <span class="bulk-count" id="bulk-count">0 selected</span>
+        <button class="bulk-btn" id="bulk-delete">Delete selected</button>
+        <button class="bulk-btn" id="bulk-download">Download ZIP</button>
+        <button class="bulk-btn deselect" id="bulk-deselect">Deselect all</button>
+      </div>
       <div id="snapshots-grid"></div>
     </div>
   </div>
@@ -590,8 +631,9 @@
     const URL_LOGS         = {{ url_for('get_logs')        | tojson }};
     const URL_LOGS_CLEAR   = {{ url_for('clear_logs')      | tojson }};
     const URL_LOGS_STREAM  = {{ url_for('stream_logs')     | tojson }};
-    const URL_SNAPSHOTS    = {{ url_for('get_snapshots')   | tojson }};
-    const URL_SNAPS_CLEAR  = {{ url_for('clear_snapshots') | tojson }};
+    const URL_SNAPSHOTS      = {{ url_for('get_snapshots')         | tojson }};
+    const URL_SNAPS_CLEAR    = {{ url_for('clear_snapshots')       | tojson }};
+    const URL_SNAPS_DOWNLOAD = {{ url_for('download_snapshots_zip')| tojson }};
 
     function snapImageUrl(id)  { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}/image`); }
     function snapDeleteUrl(id) { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}`); }
@@ -774,16 +816,58 @@
 
     // ══ Snapshots ═══════════════════════════════════════════════════
     let allSnaps = [], activeGestureFilter = "", activeCamFilter = "", modalSnap = null;
+    let selectedIds = new Set();
     const gestureFilter = document.getElementById("gesture-filter");
     const camFilter     = document.getElementById("snap-cam-filter");
     const grid          = document.getElementById("snapshots-grid");
+    const bulkBar       = document.getElementById("bulk-bar");
+    const bulkCount     = document.getElementById("bulk-count");
+
+    function updateBulkBar() {
+      const n = selectedIds.size;
+      bulkCount.textContent = n + " selected";
+      bulkBar.classList.toggle("visible", n > 0);
+      grid.classList.toggle("selection-active", n > 0);
+    }
+
+    document.getElementById("bulk-deselect").addEventListener("click", () => {
+      selectedIds.clear();
+      grid.querySelectorAll(".snap-card").forEach(c => {
+        c.classList.remove("snap-selected");
+        c.querySelector(".snap-check").checked = false;
+      });
+      updateBulkBar();
+    });
+
+    document.getElementById("bulk-delete").addEventListener("click", async () => {
+      const ids = [...selectedIds];
+      await Promise.all(ids.map(id => fetch(snapDeleteUrl(id), {method:"DELETE"})));
+      allSnaps = allSnaps.filter(x => !ids.includes(x.id));
+      selectedIds.clear();
+      rebuildSnapFilters(); renderGrid();
+    });
+
+    document.getElementById("bulk-download").addEventListener("click", async () => {
+      const ids = [...selectedIds];
+      const res = await fetch(URL_SNAPS_DOWNLOAD, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ids}),
+      });
+      if (!res.ok) { alert("Download failed"); return; }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url; a.download = "snapshots.zip"; a.click();
+      URL.revokeObjectURL(url);
+    });
 
     gestureFilter.addEventListener("change", () => { activeGestureFilter = gestureFilter.value; renderGrid(); });
     camFilter.addEventListener("change",     () => { activeCamFilter     = camFilter.value;     renderGrid(); });
     document.getElementById("btn-refresh-snaps").addEventListener("click", loadSnapshots);
     document.getElementById("btn-clear-snaps").addEventListener("click", async () => {
       await fetch(URL_SNAPS_CLEAR, { method:"DELETE" });
-      allSnaps = []; renderGrid();
+      allSnaps = []; selectedIds.clear(); renderGrid();
     });
 
     async function loadSnapshots() {
@@ -837,7 +921,11 @@
       grid.innerHTML = "";
       visible.forEach(s => {
         const card = document.createElement("div"); card.className = "snap-card";
+        if (selectedIds.has(s.id)) card.classList.add("snap-selected");
         card.innerHTML = `
+          <div class="snap-check-wrap">
+            <input type="checkbox" class="snap-check" title="Select" ${selectedIds.has(s.id) ? "checked" : ""} />
+          </div>
           <img src="${snapImageUrl(s.id)}" alt="snapshot" loading="lazy" />
           <div class="snap-info">
             <div class="snap-camera">${escHtml(s.camera)}</div>
@@ -848,16 +936,24 @@
             <button class="snap-icon-btn dl"  title="Download">↓</button>
             <button class="snap-icon-btn del" title="Delete">✕</button>
           </div>`;
-        card.addEventListener("click", e => { if (!e.target.closest(".snap-card-actions")) openModal(s); });
+        card.querySelector(".snap-check").addEventListener("change", e => {
+          e.stopPropagation();
+          if (e.target.checked) { selectedIds.add(s.id);    card.classList.add("snap-selected"); }
+          else                  { selectedIds.delete(s.id); card.classList.remove("snap-selected"); }
+          updateBulkBar();
+        });
+        card.addEventListener("click", e => { if (!e.target.closest(".snap-card-actions") && !e.target.closest(".snap-check-wrap")) openModal(s); });
         card.querySelector(".dl").addEventListener("click",  e => { e.stopPropagation(); downloadSnap(s); });
         card.querySelector(".del").addEventListener("click", async e => {
           e.stopPropagation();
           await fetch(snapDeleteUrl(s.id), {method:"DELETE"});
           allSnaps = allSnaps.filter(x => x.id !== s.id);
+          selectedIds.delete(s.id);
           rebuildSnapFilters(); renderGrid();
         });
         grid.appendChild(card);
       });
+      updateBulkBar();
     }
 
     function downloadSnap(s) {

@@ -1,5 +1,8 @@
+import io
 import json
 import logging
+import os
+import zipfile
 
 from flask import Flask, Response, render_template, request, jsonify, send_file
 
@@ -174,5 +177,28 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
     def clear_snapshots():
         snapshot_store.clear()
         return jsonify({"status": "ok"})
+
+    @app.post("/api/snapshots/download")
+    def download_snapshots_zip():
+        data = request.get_json(force=True) or {}
+        ids  = data.get("ids", [])
+        if not ids:
+            return jsonify({"error": "No snapshot IDs provided"}), 400
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for sid in ids:
+                s = snapshot_store.get_by_id(sid)
+                if s and os.path.exists(s["image_path"]):
+                    safe_time = s["timestamp"].replace(":", "-").replace(" ", "_")
+                    filename  = f"{s['camera']}_{safe_time}.jpg"
+                    zf.write(s["image_path"], filename)
+        buf.seek(0)
+        return send_file(
+            buf,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name="snapshots.zip",
+        )
 
     return app
