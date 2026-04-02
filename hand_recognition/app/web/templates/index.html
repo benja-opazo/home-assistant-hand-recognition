@@ -866,6 +866,7 @@
     camFilter.addEventListener("change",     () => { activeCamFilter     = camFilter.value;     renderGrid(); });
     document.getElementById("btn-refresh-snaps").addEventListener("click", loadSnapshots);
     document.getElementById("btn-clear-snaps").addEventListener("click", async () => {
+      if (!confirm("Delete all snapshots? This cannot be undone.")) return;
       await fetch(URL_SNAPS_CLEAR, { method:"DELETE" });
       allSnaps = []; selectedIds.clear(); renderGrid();
     });
