@@ -3,6 +3,8 @@ import signal
 import sys
 import threading
 
+from gunicorn.app.base import BaseApplication
+
 from config import load_config
 from frigate_client import FrigateClient
 from hand_recognizer import HandRecognizer
@@ -38,15 +40,20 @@ def main():
     listener.start()
 
     flask_app = create_app(config, log_handler, snapshot_store)
-    web_thread = threading.Thread(
-        target=lambda: flask_app.run(
-            host="0.0.0.0",
-            port=config["web_ui_port"],
-            use_reloader=False,
-            threaded=True,
-        ),
-        daemon=True,
-    )
+
+    class _GunicornApp(BaseApplication):
+        def load_config(self):
+            self.cfg.set("bind",         f"0.0.0.0:{config['web_ui_port']}")
+            self.cfg.set("worker_class", "gthread")
+            self.cfg.set("workers",      1)
+            self.cfg.set("threads",      8)
+            self.cfg.set("timeout",      0)   # disable worker timeout (SSE streams are long-lived)
+            self.cfg.set("loglevel",     "warning")
+
+        def load(self):
+            return flask_app
+
+    web_thread = threading.Thread(target=_GunicornApp().run, daemon=True)
     web_thread.start()
     logger.info("Web UI available on port %d", config["web_ui_port"])
 

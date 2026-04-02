@@ -1,6 +1,6 @@
 name: Hand Recognition
 description: Detects and classifies hand gestures from Frigate camera snapshots using MediaPipe.
-version: "0.1.17"
+version: "0.2.0"
 slug: hand_recognition
 init: false
 arch:
@@ -20,7 +20,7 @@ ports_description:
   8099/tcp: Web UI for configuration
 options:
   web_ui_port: 8099
-  max_snapshots: 10
+  max_snapshots: 100
 schema:
   web_ui_port: int
   max_snapshots: int
