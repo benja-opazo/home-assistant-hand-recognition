@@ -29,7 +29,7 @@ def main():
 
     snapshot_store = SnapshotStore(max_snapshots=config.get("max_snapshots", 10))
     frigate = FrigateClient(config["frigate_url"])
-    recognizer = HandRecognizer()
+    recognizer = HandRecognizer(config)
     listener = MQTTListener(config, frigate, recognizer, None, snapshot_store)
 
     publisher = MQTTPublisher(listener.mqtt_client, config["output_topic_template"])

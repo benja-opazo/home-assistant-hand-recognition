@@ -55,7 +55,16 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
 
             str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url",
                           "output_topic_template", "mqtt_topic", "frigate_snapshot_mode"]
-            int_fields = ["mqtt_port", "web_ui_port", "max_snapshots"]
+            int_fields = ["mqtt_port", "web_ui_port", "max_snapshots",
+                          "mediapipe_max_num_hands", "mediapipe_model_complexity"]
+            float_fields = ["mediapipe_min_detection_confidence"]
+
+            for field in float_fields:
+                if field in data:
+                    try:
+                        cfg[field] = float(data[field])
+                    except (ValueError, TypeError):
+                        return jsonify({"error": f"Invalid value for {field}"}), 400
 
             for field in str_fields:
                 if field in data:
@@ -66,6 +75,11 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
                         cfg[field] = int(data[field])
                     except (ValueError, TypeError):
                         return jsonify({"error": f"Invalid value for {field}"}), 400
+
+            if "enabled_gestures" in data:
+                if not isinstance(data["enabled_gestures"], list):
+                    return jsonify({"error": "enabled_gestures must be a list"}), 400
+                cfg["enabled_gestures"] = [str(g) for g in data["enabled_gestures"]]
 
             if "topic_filters" in data:
                 filters = data["topic_filters"]

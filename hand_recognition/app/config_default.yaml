@@ -7,6 +7,20 @@ frigate_snapshot_mode: "event"
 output_topic_template: "hand-recognition/{camera}"
 web_ui_port: 8099
 max_snapshots: 10
+mediapipe_min_detection_confidence: 0.5
+mediapipe_max_num_hands: 2
+mediapipe_model_complexity: 1
+enabled_gestures:
+  - fist
+  - thumbs_up
+  - pointing
+  - peace
+  - open_palm
+  - four_fingers
+  - rock_on
+  - call_me
+  - pinky
+  - three_fingers
 mqtt_topic: "frigate/events"
 topic_filters:
   - property: "type"

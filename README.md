@@ -43,7 +43,21 @@ If no hands are detected in the snapshot, nothing is published.
 
 ## Supported Gestures
 
-`fist`, `thumbs_up`, `pointing`, `peace`, `open_palm`, `four_fingers`, `rock_on`, `call_me`, `pinky`, `three_fingers`
+These are the values that appear in the `gesture` field of the MQTT payload.
+
+| Value | Description |
+|-------|-------------|
+| `fist` | All fingers curled, closed fist |
+| `thumbs_up` | Thumb extended, all other fingers curled |
+| `pointing` | Index finger extended, all others curled |
+| `peace` | Index and middle fingers extended (V sign) |
+| `open_palm` | All five fingers extended |
+| `four_fingers` | Index, middle, ring, and pinky extended, thumb curled |
+| `three_fingers` | Index, middle, and ring fingers extended |
+| `rock_on` | Index and pinky extended, thumb out (horns sign) |
+| `call_me` | Thumb and pinky extended, other fingers curled |
+| `pinky` | Pinky finger only extended |
+| `unknown` | A hand was detected but the finger combination did not match any of the above |
 
 ## Home Assistant Automation Example
 
