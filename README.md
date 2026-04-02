@@ -1,3 +1,8 @@
+> [!NOTE]
+> This app is almost completely vibed coded, I wanted to have a simple interface for Hand Recognition and Double Take wasn't really working for me. After understanding the problem at hand, I noticed that the project structure was going to be very simple, so I gave Claude a shot.
+> I made this app for my personal use, but I am sharing it because it works perfectly for my use case, and maybe its useful for others.
+> If you have an issue with the app being Vibe Coded, please refrain to make any comments. Thanks.
+
 # Home Assistant Hand Recognition Add-on
 
 Detects and classifies hand gestures from Frigate camera snapshots using MediaPipe.
@@ -13,14 +18,15 @@ When a gesture is recognized, it publishes the result to an MQTT topic so Home A
 
 ## Configuration
 
-The web UI has four tabs:
+The web UI has five tabs:
 
 | Tab | Purpose |
 |-----|---------|
-| Connections | MQTT broker, Frigate URL, output topic template |
-| Detection | MQTT topic to subscribe to, message filters |
-| Snapshots | View, filter, download, and delete captured snapshots |
-| Logs | Live log stream with level and source filters |
+| Snapshots | Grid of captured snapshots with gesture and camera filters. Supports single download/delete per card, and multi-select for bulk delete or ZIP download. |
+| Connections | MQTT broker credentials, Frigate URL, snapshot mode (event vs. latest frame), and output topic template. |
+| Detection | MQTT topic to subscribe to, plus configurable message filters (property, comparator, value) for routing events. |
+| MediaPipe | Toggle individual gestures on/off and adjust model settings (confidence threshold, max hands, model complexity). |
+| Logs | Live log stream with level and source filters, pause, clear, and download. |
 
 ## MQTT Output
 
