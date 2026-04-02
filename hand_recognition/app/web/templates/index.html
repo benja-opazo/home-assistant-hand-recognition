@@ -1371,8 +1371,8 @@
     document.getElementById("btn-restart").addEventListener("click", () => {
       powerMenu.classList.remove("open");
       showConfirm("Restart", "Restart the add-on?", async () => {
-        await fetch(URL_RESTART, {method:"POST"});
         showRestartCountdown();
+        fetch(URL_RESTART, {method:"POST"});
       });
     });
     document.getElementById("btn-shutdown").addEventListener("click", () => {
