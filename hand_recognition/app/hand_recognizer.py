@@ -61,13 +61,15 @@ def _sigmoid(x: float) -> float:
 _FINGER_NAMES = ("thumb", "index", "middle", "ring", "pinky")
 
 
-def _finger_scores(hand_landmarks, sigmoid_k: float, thumb_angle_deg: float = 0.0) -> tuple[tuple[float, ...], float]:
+def _finger_scores(hand_landmarks, sigmoid_k: float, thumb_angle_deg: float = 0.0, hand_label: str = "Right") -> tuple[tuple[float, ...], float]:
     """Return (scores, angle_deg).
 
     scores: continuous extension score in [0, 1] for each finger, order = _FINGER_NAMES.
     angle_deg: palm rotation in degrees (0 = upright, positive = clockwise).
     thumb_angle_deg: direction of thumb extension in the rotated frame, measured from
         horizontal (0° = x-axis only, 45° = equal x+y component).
+    hand_label: "Right" or "Left". For left hands the x-axis is mirrored so the
+        same angle value applies symmetrically to both hands.
     """
     lm = hand_landmarks.landmark
     tips = [4, 8, 12, 16, 20]
@@ -81,11 +83,15 @@ def _finger_scores(hand_landmarks, sigmoid_k: float, thumb_angle_deg: float = 0.
 
     pts = _rotate_landmarks(lm, angle)
 
+    # For left hands the thumb extends to the right; mirror the x-axis so the
+    # same thumb_angle_deg value works for both hands symmetrically.
+    x_sign = -1.0 if hand_label == "Left" else 1.0
+
     scores = []
     # Thumb: project pip→tip displacement onto the configured opening direction
-    thumb_rad  = np.radians(thumb_angle_deg)
+    thumb_rad    = np.radians(thumb_angle_deg)
     cos_t, sin_t = np.cos(thumb_rad), np.sin(thumb_rad)
-    tdx = pts[pips[0]][0] - pts[tips[0]][0]
+    tdx = x_sign * (pts[pips[0]][0] - pts[tips[0]][0])
     tdy = pts[pips[0]][1] - pts[tips[0]][1]
     scores.append(_sigmoid(sigmoid_k * (tdx * cos_t + tdy * sin_t) / palm_size))
     # Other fingers: extension along y-axis (pip.y - tip.y > 0 means extended)
@@ -190,9 +196,9 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            scores, angle_deg   = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle)
-            gesture, confidence = _match_gesture(scores, self._score_threshold)
             hand_label          = handedness.classification[0].label
+            scores, angle_deg   = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
+            gesture, confidence = _match_gesture(scores, self._score_threshold)
             detections.append({
                 "gesture":       gesture,
                 "score":         confidence,
@@ -218,7 +224,8 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            scores, _           = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle)
+            hand_label          = handedness.classification[0].label  # "Left" or "Right"
+            scores, _           = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
             gesture, confidence = _match_gesture(scores, self._score_threshold)
 
             if gesture != "unknown" and gesture not in self._enabled:
@@ -226,8 +233,6 @@ class HandRecognizer:
                     "Gesture '%s' is disabled — skipping this detection", gesture
                 )
                 continue
-
-            hand_label = handedness.classification[0].label  # "Left" or "Right"
             detections.append({
                 "gesture": gesture,
                 "score":   confidence,
