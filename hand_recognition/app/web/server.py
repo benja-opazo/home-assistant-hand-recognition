@@ -48,7 +48,8 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
         except Exception as e:
             logger.error("Failed to load config: %s", e)
             cfg = {}
-        return render_template("index.html", config=cfg, available_gestures=available_gestures or [])
+        return render_template("index.html", config=cfg, available_gestures=available_gestures or [],
+                               debug_mode=bool(cfg.get("debug_mode", False)))
 
     @app.post("/api/config")
     def update_config():
