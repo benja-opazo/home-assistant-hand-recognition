@@ -21,28 +21,95 @@ GESTURES: dict[tuple[bool, ...], str] = {
     (True,  True,  True,  False, False): "three_fingers",
 }
 
+GESTURE_LABELS: dict[str, str] = {
+    "fist":          "Fist",
+    "thumbs_up":     "Thumbs up",
+    "pointing":      "Pointing",
+    "peace":         "Peace (V sign)",
+    "open_palm":     "Open palm",
+    "four_fingers":  "Four fingers",
+    "rock_on":       "Rock on (horns)",
+    "call_me":       "Call me",
+    "pinky":         "Pinky",
+    "three_fingers": "Three fingers",
+}
+
 ALL_GESTURES: list[str] = list(GESTURES.values())
 
 
-def _finger_states(hand_landmarks) -> tuple[bool, ...]:
+# Defaults — overridden by config keys landmark_sigmoid_k / landmark_score_threshold
+_DEFAULT_SIGMOID_K       = 4.0
+_DEFAULT_SCORE_THRESHOLD = 0.6
+
+
+def _rotate_landmarks(lm, angle: float) -> list[tuple[float, float]]:
+    """Rotate all landmarks by -angle so the palm axis aligns with the y-axis."""
+    cos_a, sin_a = np.cos(-angle), np.sin(-angle)
+    return [(lm[i].x * cos_a - lm[i].y * sin_a,
+             lm[i].x * sin_a + lm[i].y * cos_a)
+            for i in range(21)]
+
+
+def _sigmoid(x: float) -> float:
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def _finger_scores(hand_landmarks, sigmoid_k: float) -> tuple[float, ...]:
+    """Return a continuous extension score in [0, 1] for each finger.
+
+    1.0 = fully extended, 0.0 = fully curled.
+    """
     lm = hand_landmarks.landmark
     tips = [4, 8, 12, 16, 20]
     pips = [3, 6, 10, 14, 18]
 
-    states = []
-    # Thumb: compare x-axis (works for right hand; mirrors for left)
-    states.append(lm[tips[0]].x < lm[pips[0]].x)
-    # Other fingers: tip y < pip y means extended (y increases downward)
+    # Compute palm orientation: wrist (0) → middle MCP (9)
+    dx = lm[9].x - lm[0].x
+    dy = lm[9].y - lm[0].y
+    angle     = np.arctan2(dy, dx) - np.pi / 2  # offset so "up" = 0
+    palm_size = np.hypot(dx, dy) or 1e-6         # normalise by hand scale
+
+    pts = _rotate_landmarks(lm, angle)
+
+    scores = []
+    # Thumb: extension along x-axis in rotated frame
+    scores.append(_sigmoid(sigmoid_k * (pts[pips[0]][0] - pts[tips[0]][0]) / palm_size))
+    # Other fingers: extension along y-axis (pip.y - tip.y > 0 means extended)
     for tip, pip in zip(tips[1:], pips[1:]):
-        states.append(lm[tip].y < lm[pip].y)
-    return tuple(states)
+        scores.append(_sigmoid(sigmoid_k * (pts[pip][1] - pts[tip][1]) / palm_size))
+    return tuple(scores)
+
+
+def _match_gesture(scores: tuple[float, ...], score_threshold: float) -> tuple[str, float]:
+    """Return (gesture_name, confidence) for the best-matching gesture.
+
+    Confidence is the mean per-finger match score across all five fingers.
+    """
+    best_name  = "unknown"
+    best_score = 0.0
+
+    for pattern, name in GESTURES.items():
+        score = sum(
+            s if expected else (1.0 - s)
+            for s, expected in zip(scores, pattern)
+        ) / len(pattern)
+
+        if score > best_score:
+            best_score = score
+            best_name  = name
+
+    if best_score < score_threshold:
+        return "unknown", round(best_score, 3)
+    return best_name, round(best_score, 3)
 
 
 class HandRecognizer:
     def __init__(self, config: dict | None = None):
         cfg = config or {}
         enabled = cfg.get("enabled_gestures", ALL_GESTURES)
-        self._enabled: set[str] = set(enabled) if enabled else set(ALL_GESTURES)
+        self._enabled: set[str]  = set(enabled) if enabled else set(ALL_GESTURES)
+        self._sigmoid_k: float   = float(cfg.get("landmark_sigmoid_k",       _DEFAULT_SIGMOID_K))
+        self._score_threshold: float = float(cfg.get("landmark_score_threshold", _DEFAULT_SCORE_THRESHOLD))
 
         self._hands = mp.solutions.hands.Hands(
             static_image_mode=True,
@@ -52,12 +119,18 @@ class HandRecognizer:
         )
         logger.info(
             "MediaPipe Hands initialised — complexity=%s, min_confidence=%.2f, "
-            "max_hands=%s, enabled_gestures=%s",
+            "max_hands=%s, sigmoid_k=%.1f, score_threshold=%.2f, enabled_gestures=%s",
             cfg.get("mediapipe_model_complexity", 1),
             float(cfg.get("mediapipe_min_detection_confidence", 0.5)),
             cfg.get("mediapipe_max_num_hands", 2),
+            self._sigmoid_k,
+            self._score_threshold,
             sorted(self._enabled),
         )
+
+    def available_gestures(self) -> list[tuple[str, str]]:
+        """Return [(value, label), ...] for all gestures this recognizer supports."""
+        return [(g, GESTURE_LABELS.get(g, g)) for g in ALL_GESTURES]
 
     def recognize(self, image: np.ndarray) -> list[dict]:
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -70,8 +143,8 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            states  = _finger_states(hand_landmarks)
-            gesture = GESTURES.get(states, "unknown")
+            scores              = _finger_scores(hand_landmarks, self._sigmoid_k)
+            gesture, confidence = _match_gesture(scores, self._score_threshold)
 
             if gesture != "unknown" and gesture not in self._enabled:
                 logger.debug(
@@ -79,14 +152,13 @@ class HandRecognizer:
                 )
                 continue
 
-            score      = handedness.classification[0].score
             hand_label = handedness.classification[0].label  # "Left" or "Right"
             detections.append({
                 "gesture": gesture,
-                "score":   round(score, 3),
+                "score":   confidence,
                 "hand":    hand_label,
             })
-            logger.debug("Detected %s hand: %s (score=%.3f)", hand_label, gesture, score)
+            logger.debug("Detected %s hand: %s (score=%.3f)", hand_label, gesture, confidence)
 
         return detections
 

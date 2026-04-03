@@ -30,7 +30,7 @@ The web UI has five tabs:
 | Snapshots | Grid of captured snapshots with gesture and camera filters. Supports single download/delete per card, and multi-select for bulk delete or ZIP download. |
 | Connections | MQTT broker credentials, Frigate URL, snapshot mode (event vs. latest frame), and output topic template. |
 | Detection | MQTT topic to subscribe to, plus configurable message filters (property, comparator, value) for routing events. |
-| MediaPipe | Toggle individual gestures on/off and adjust model settings (confidence threshold, max hands, model complexity). |
+| MediaPipe | Toggle individual gestures on/off, select the recognition backend (Landmarks or GestureRecognizer), and adjust model settings (confidence threshold, max hands, model complexity, scoring parameters). |
 | Logs | Live log stream with level and source filters, pause, clear, and download. |
 
 The default configuration should work out of the box, except for the MQTT credentials that have to be configured.
@@ -54,9 +54,51 @@ When a gesture is detected, the add-on publishes to the configured topic (defaul
 
 If no hands are detected in the snapshot, **nothing is published**.
 
+## Recognition Backends
+
+The **MediaPipe** tab lets you choose between two recognition backends. Both output the same MQTT payload format.
+
+### Landmarks (default)
+
+Uses MediaPipe's hand landmark detection combined with a custom gesture classifier built into this add-on. Gestures are scored by how well each finger matches its expected open/closed state, and the best-matching gesture wins.
+
+**Pros:**
+- Supports a larger and fully customizable gesture set (10 gestures out of the box)
+- Two tunable parameters — **sigmoid sharpness** and **score threshold** — let you dial in sensitivity without a restart
+- No extra model file required
+
+**Cons:**
+- Confidence scores are relative (how well the hand matches a pattern), not absolute probabilities
+- Can struggle with non-upright hand orientations, though palm rotation is compensated automatically
+
+**Supported gestures:** `fist`, `thumbs_up`, `pointing`, `peace`, `open_palm`, `four_fingers`, `three_fingers`, `rock_on`, `call_me`, `pinky`
+
+---
+
+### MediaPipe GestureRecognizer
+
+Uses MediaPipe's own built-in gesture classifier, which runs a neural network trained by Google on top of the landmarks.
+
+**Pros:**
+- Returns true probability scores — more meaningful confidence values
+- More robust to hand orientation and lighting variation
+
+**Cons:**
+- Requires downloading a separate model file (~20 MB) via the UI
+- Fixed gesture set — only the gestures Google trained for are available
+- Does not support the custom gestures from the Landmarks backend
+
+**Supported gestures:** `fist`, `open_palm`, `pointing`, `thumbs_up`, `thumbs_down`, `peace`, `i_love_you`
+
+To use it: select **MediaPipe GestureRecognizer** in the Recognition Backend section, click **Download model**, then save and restart.
+
+---
+
 ## Supported Gestures
 
-These are the values that appear in the `gesture` field of the MQTT payload.
+These are the values that appear in the `gesture` field of the MQTT payload. Which gestures are available depends on the backend selected.
+
+### Landmarks backend
 
 | Value | Description |
 |-------|-------------|
@@ -70,7 +112,20 @@ These are the values that appear in the `gesture` field of the MQTT payload.
 | `rock_on` | Index and pinky extended, thumb out (horns sign) |
 | `call_me` | Thumb and pinky extended, other fingers curled |
 | `pinky` | Pinky finger only extended |
-| `unknown` | A hand was detected but the finger combination did not match any of the above |
+| `unknown` | A hand was detected but did not match any gesture above the score threshold |
+
+### GestureRecognizer backend
+
+| Value | Description |
+|-------|-------------|
+| `fist` | Closed fist |
+| `open_palm` | All fingers extended |
+| `pointing` | Index finger pointing up |
+| `thumbs_up` | Thumbs up |
+| `thumbs_down` | Thumbs down |
+| `peace` | Index and middle fingers extended (V sign) |
+| `i_love_you` | Thumb, index, and pinky extended (ILY sign) |
+| `unknown` | A hand was detected but no gesture was confidently identified |
 
 ## Tips for Improving Hand Detection
 

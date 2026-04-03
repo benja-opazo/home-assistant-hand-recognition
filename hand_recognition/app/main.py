@@ -6,7 +6,7 @@ from waitress import serve
 from config import load_config
 from event_processor import EventProcessor
 from frigate_client import FrigateClient
-from hand_recognizer import HandRecognizer
+from recognizer_factory import create_recognizer
 from log_handler import InMemoryLogHandler
 from mqtt_listener import MQTTListener
 from mqtt_publisher import MQTTPublisher
@@ -30,7 +30,7 @@ def main():
 
     snapshot_store = SnapshotStore(max_snapshots=config.get("max_snapshots", 10))
     frigate        = FrigateClient(config["frigate_url"])
-    recognizer     = HandRecognizer(config)
+    recognizer     = create_recognizer(config)
 
     # Listener is created first so its mqtt_client is available for the publisher.
     listener  = MQTTListener(config)
@@ -41,7 +41,7 @@ def main():
 
     threading.Thread(target=listener.start, daemon=True).start()
 
-    flask_app = create_app(config, log_handler, snapshot_store)
+    flask_app = create_app(config, log_handler, snapshot_store, recognizer.available_gestures())
 
     logger.info("Web UI available on port %d", config["web_ui_port"])
     serve(flask_app, host="0.0.0.0", port=config["web_ui_port"], threads=8)

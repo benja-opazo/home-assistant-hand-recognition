@@ -653,6 +653,28 @@
             value="{{ config.mediapipe_max_num_hands | default(2) }}" />
         </div>
 
+        <div id="landmark-settings">
+          <div class="field">
+            <label for="landmark_sigmoid_k">Sigmoid sharpness (k)</label>
+            <input id="landmark_sigmoid_k" name="landmark_sigmoid_k"
+              type="number" step="0.5" min="0.5" max="20"
+              value="{{ config.landmark_sigmoid_k | default(4.0) }}" />
+            <span class="hint">
+              Controls how sharply a finger is classified as extended vs curled (0.5 – 20).
+              Higher = more binary, lower = more gradual scoring.
+            </span>
+          </div>
+          <div class="field">
+            <label for="landmark_score_threshold">Score threshold</label>
+            <input id="landmark_score_threshold" name="landmark_score_threshold"
+              type="number" step="0.05" min="0.5" max="1"
+              value="{{ config.landmark_score_threshold | default(0.6) }}" />
+            <span class="hint">
+              Minimum gesture match confidence to report a detection instead of <code>unknown</code> (0.5 – 1.0).
+            </span>
+          </div>
+        </div>
+
         <p class="section-title">Model Complexity</p>
         <div class="topic-options" style="margin-bottom:1rem">
           <label class="topic-option">
@@ -675,6 +697,48 @@
               More accurate landmark detection. Better performance in low-light or at distance.
             </div>
           </label>
+        </div>
+
+        <p class="section-title" style="margin-top:1.5rem">Recognition Backend</p>
+        <p class="hint" style="margin-bottom:.75rem">Restart the add-on after changing the backend.</p>
+
+        <div class="topic-options" style="margin-bottom:1rem">
+          <label class="topic-option">
+            <div class="topic-option-header">
+              <input type="radio" name="recognizer_backend" value="landmarks"
+                {{ 'checked' if (config.recognizer_backend | default('landmarks')) == 'landmarks' else '' }} />
+              <span class="topic-option-name">Landmarks</span>
+            </div>
+            <div class="topic-option-desc">
+              Custom gesture set based on hand landmark positions. Supports all configured gestures.
+            </div>
+          </label>
+          <label class="topic-option">
+            <div class="topic-option-header">
+              <input type="radio" name="recognizer_backend" value="gesture_recognizer"
+                {{ 'checked' if (config.recognizer_backend | default('landmarks')) == 'gesture_recognizer' else '' }} />
+              <span class="topic-option-name">MediaPipe GestureRecognizer</span>
+            </div>
+            <div class="topic-option-desc">
+              Uses MediaPipe's built-in gesture classifier. Returns real confidence scores.
+              Supports: Fist, Open palm, Pointing up, Thumbs up/down, Peace, I love you.
+            </div>
+          </label>
+        </div>
+
+        <div id="gr-model-section" style="margin-bottom:1rem">
+          <div class="field">
+            <label for="gesture_recognizer_model_path">Model file path</label>
+            <input id="gesture_recognizer_model_path" name="gesture_recognizer_model_path"
+              type="text"
+              value="{{ config.gesture_recognizer_model_path | default('/data/gesture_recognizer.task') }}" />
+            <span class="hint">Path where the <code>.task</code> model file is stored on the device.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+            <button type="button" id="btn-download-model" class="primary">Download model</button>
+            <span id="model-status-badge"></span>
+          </div>
+          <p class="save-status" id="download-status"></p>
         </div>
 
         <button type="submit" class="primary">Save MediaPipe configuration</button>
@@ -1068,7 +1132,7 @@
 
     function gestureTagsHtml(d) {
       if (!d.length) return `<span class="gesture-tag none">No hands</span>`;
-      return d.map(x=>`<span class="gesture-tag detected">${GESTURE_EMOJI[x.gesture]||"?"} ${x.gesture.replace(/_/g," ")}</span>`).join("");
+      return d.map(x=>`<span class="gesture-tag detected">${GESTURE_EMOJI[x.gesture]||"?"} ${x.gesture.replace(/_/g," ")} <span style="opacity:.6;font-weight:400">${Math.round(x.score*100)}%</span></span>`).join("");
     }
 
     function renderGrid() {
@@ -1264,18 +1328,7 @@
     }, 10000);
 
     // ══ MediaPipe ═══════════════════════════════════════════════════
-    const ALL_GESTURES = [
-      ["fist",         "Fist"],
-      ["thumbs_up",    "Thumbs up"],
-      ["pointing",     "Pointing"],
-      ["peace",        "Peace (V sign)"],
-      ["open_palm",    "Open palm"],
-      ["four_fingers", "Four fingers"],
-      ["rock_on",      "Rock on (horns)"],
-      ["call_me",      "Call me"],
-      ["pinky",        "Pinky"],
-      ["three_fingers","Three fingers"],
-    ];
+    const ALL_GESTURES = {{ available_gestures | tojson }};
 
     const INIT_ENABLED = new Set({{ (config.enabled_gestures | default([])) | tojson }});
 
@@ -1300,6 +1353,7 @@
         .map(cb => cb.value);
 
       const complexityRadio = e.target.querySelector("input[name='mediapipe_model_complexity']:checked");
+      const backendRadio    = e.target.querySelector("input[name='recognizer_backend']:checked");
 
       const payload = {
         enabled_gestures: enabledGestures,
@@ -1310,6 +1364,10 @@
           document.getElementById("mediapipe_max_num_hands").value, 10
         ),
         mediapipe_model_complexity: complexityRadio ? parseInt(complexityRadio.value, 10) : 1,
+        landmark_sigmoid_k:        parseFloat(document.getElementById("landmark_sigmoid_k").value),
+        landmark_score_threshold:  parseFloat(document.getElementById("landmark_score_threshold").value),
+        recognizer_backend: backendRadio ? backendRadio.value : "landmarks",
+        gesture_recognizer_model_path: document.getElementById("gesture_recognizer_model_path").value.trim(),
       };
 
       status.textContent = "Saving…"; status.className = "save-status";
@@ -1326,6 +1384,63 @@
       } catch(err) {
         status.textContent = "Network error: " + err.message;
         status.className = "save-status err";
+      }
+    });
+
+    // ── Backend visibility toggle ────────────────────────────────────
+    function updateBackendVisibility() {
+      const backend = document.querySelector("input[name='recognizer_backend']:checked")?.value || "landmarks";
+      document.getElementById("landmark-settings").style.display  = backend === "landmarks"           ? "" : "none";
+      document.getElementById("gr-model-section").style.display   = backend === "gesture_recognizer" ? "" : "none";
+    }
+    document.querySelectorAll("input[name='recognizer_backend']").forEach(r =>
+      r.addEventListener("change", updateBackendVisibility)
+    );
+    updateBackendVisibility();
+
+    // ── GestureRecognizer model download ────────────────────────────
+    async function refreshModelStatus() {
+      const badge = document.getElementById("model-status-badge");
+      try {
+        const res  = await fetch("{{ url_for('gesture_model_status') }}");
+        const json = await res.json();
+        if (json.exists) {
+          badge.textContent = `Model present (${json.size_mb} MB)`;
+          badge.style.cssText = "font-size:.8rem;color:#3fb950";
+        } else {
+          badge.textContent = "Model not found";
+          badge.style.cssText = "font-size:.8rem;color:#f85149";
+        }
+      } catch {
+        badge.textContent = "";
+      }
+    }
+    refreshModelStatus();
+
+    document.getElementById("btn-download-model").addEventListener("click", async () => {
+      const btn    = document.getElementById("btn-download-model");
+      const status = document.getElementById("download-status");
+      btn.disabled = true;
+      btn.textContent = "Downloading…";
+      status.textContent = "Downloading model, this may take a moment…";
+      status.className = "save-status";
+      try {
+        const res  = await fetch("{{ url_for('download_gesture_model') }}", { method: "POST" });
+        const json = await res.json();
+        if (res.ok) {
+          status.textContent = `Downloaded successfully (${json.size_mb} MB) → ${json.path}`;
+          status.className = "save-status ok";
+          refreshModelStatus();
+        } else {
+          status.textContent = "Error: " + (json.error || res.statusText);
+          status.className = "save-status err";
+        }
+      } catch(err) {
+        status.textContent = "Network error: " + err.message;
+        status.className = "save-status err";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Download model";
       }
     });
 

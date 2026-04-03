@@ -32,7 +32,7 @@ class _ReverseProxied:
         return self.app(environ, start_response)
 
 
-def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: SnapshotStore) -> Flask:
+def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: SnapshotStore, available_gestures: list[tuple[str, str]] | None = None) -> Flask:
     app = Flask(__name__, template_folder="templates")
     app.wsgi_app = _ReverseProxied(app.wsgi_app)
     app.config["current_config"] = config
@@ -48,7 +48,7 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
         except Exception as e:
             logger.error("Failed to load config: %s", e)
             cfg = {}
-        return render_template("index.html", config=cfg)
+        return render_template("index.html", config=cfg, available_gestures=available_gestures or [])
 
     @app.post("/api/config")
     def update_config():
@@ -60,12 +60,13 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
             cfg = load_config()
 
             str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url",
-                          "output_topic_template", "mqtt_topic", "frigate_snapshot_mode"]
+                          "output_topic_template", "mqtt_topic", "frigate_snapshot_mode",
+                          "recognizer_backend", "gesture_recognizer_model_path"]
             int_fields = ["mqtt_port", "web_ui_port", "max_snapshots",
                           "mediapipe_max_num_hands", "mediapipe_model_complexity",
                           "frigate_snapshot_quality", "frigate_snapshot_height",
                           "frigate_snapshot_crop"]
-            float_fields = ["mediapipe_min_detection_confidence"]
+            float_fields = ["mediapipe_min_detection_confidence", "landmark_sigmoid_k", "landmark_score_threshold"]
 
             for field in float_fields:
                 if field in data:
@@ -201,6 +202,40 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
         except Exception as e:
             logger.error("Supervisor call '%s' failed: %s", path, e)
             return False
+
+    # ------------------------------------------------------------------ #
+    #  Gesture model routes                                               #
+    # ------------------------------------------------------------------ #
+
+    @app.get("/api/gesture-model-status")
+    def gesture_model_status():
+        cfg = load_config()
+        model_path = cfg.get("gesture_recognizer_model_path", "/data/gesture_recognizer.task")
+        exists = os.path.isfile(model_path)
+        size_mb = round(os.path.getsize(model_path) / (1024 * 1024), 1) if exists else None
+        return jsonify({"exists": exists, "path": model_path, "size_mb": size_mb})
+
+    @app.post("/api/download-gesture-model")
+    def download_gesture_model():
+        cfg = load_config()
+        model_path = cfg.get("gesture_recognizer_model_path", "/data/gesture_recognizer.task")
+        model_url  = (
+            "https://storage.googleapis.com/mediapipe-models/"
+            "gesture_recognizer/gesture_recognizer/float16/latest/gesture_recognizer.task"
+        )
+        try:
+            os.makedirs(os.path.dirname(os.path.abspath(model_path)), exist_ok=True)
+            resp = http.get(model_url, stream=True, timeout=120)
+            resp.raise_for_status()
+            with open(model_path, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=65536):
+                    f.write(chunk)
+            size_mb = round(os.path.getsize(model_path) / (1024 * 1024), 1)
+            logger.info("Gesture model downloaded to %s (%.1f MB)", model_path, size_mb)
+            return jsonify({"status": "ok", "path": model_path, "size_mb": size_mb})
+        except Exception as e:
+            logger.error("Failed to download gesture model: %s", e)
+            return jsonify({"error": str(e)}), 500
 
     @app.post("/api/restart")
     def restart():
