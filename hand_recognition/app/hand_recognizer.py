@@ -38,12 +38,11 @@ ALL_GESTURES: list[str] = list(GESTURES.values())
 
 
 # Defaults — overridden by config keys landmark_sigmoid_k / landmark_score_threshold / landmark_thumb_angle
-_DEFAULT_SIGMOID_K       = 4.0
-_DEFAULT_SCORE_THRESHOLD = 0.6
+_DEFAULT_SIGMOID_K       = 6.0
+_DEFAULT_SCORE_THRESHOLD = 0.7
 # Thumb opening angle in degrees from horizontal in the rotated frame.
 # 0° = purely horizontal (x-axis). Positive = tilts toward palm-down direction.
-# Try 30–45° if the thumb is consistently underscored.
-_DEFAULT_THUMB_ANGLE     = 0.0
+_DEFAULT_THUMB_ANGLE     = 35.0
 
 
 def _rotate_landmarks(lm, angle: float) -> list[tuple[float, float]]:

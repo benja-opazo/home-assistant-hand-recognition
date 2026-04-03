@@ -705,7 +705,7 @@
             <label for="landmark_sigmoid_k">Sigmoid sharpness (k)</label>
             <input id="landmark_sigmoid_k" name="landmark_sigmoid_k"
               type="number" step="0.5" min="0.5" max="20"
-              value="{{ config.landmark_sigmoid_k | default(4.0) }}" />
+              value="{{ config.landmark_sigmoid_k | default(6.0) }}" />
             <span class="hint">
               Controls how sharply a finger is classified as extended vs curled (0.5 – 20).
               Higher = more binary, lower = more gradual scoring.
@@ -715,7 +715,7 @@
             <label for="landmark_score_threshold">Score threshold</label>
             <input id="landmark_score_threshold" name="landmark_score_threshold"
               type="number" step="0.05" min="0.5" max="1"
-              value="{{ config.landmark_score_threshold | default(0.6) }}" />
+              value="{{ config.landmark_score_threshold | default(0.7) }}" />
             <span class="hint">
               Minimum gesture match confidence to report a detection instead of <code>unknown</code> (0.5 – 1.0).
             </span>
@@ -724,7 +724,7 @@
             <label for="landmark_thumb_angle">Thumb opening angle (°)</label>
             <input id="landmark_thumb_angle" name="landmark_thumb_angle"
               type="number" step="5" min="-90" max="90"
-              value="{{ config.landmark_thumb_angle | default(0.0) }}" />
+              value="{{ config.landmark_thumb_angle | default(35.0) }}" />
             <span class="hint">
               Direction of thumb extension in the rotated frame (-90° – 90°).
               0° = purely horizontal. Increase toward 30–45° if the thumb is consistently underscored.

@@ -28,6 +28,10 @@ logger = logging.getLogger(__name__)
 def main():
     config = load_config()
 
+    if config.get("debug_mode", False):
+        logging.getLogger().setLevel(logging.DEBUG)
+        logger.debug("Debug mode enabled — verbose logging active")
+
     snapshot_store = SnapshotStore(max_snapshots=config.get("max_snapshots", 10))
     frigate        = FrigateClient(config["frigate_url"])
     recognizer     = create_recognizer(config)

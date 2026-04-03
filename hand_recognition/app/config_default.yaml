@@ -24,12 +24,12 @@ frigate_snapshot_crop: false
 output_topic_template: "hand-recognition/{camera}"
 web_ui_port: 8099
 max_snapshots: 100
-mediapipe_min_detection_confidence: 0.7
+mediapipe_min_detection_confidence: 0.5
 mediapipe_max_num_hands: 2
 mediapipe_model_complexity: 1
-landmark_sigmoid_k: 4.0
-landmark_score_threshold: 0.6
-landmark_thumb_angle: 0.0
+landmark_sigmoid_k: 6.0
+landmark_score_threshold: 0.7
+landmark_thumb_angle: 35.0
 recognizer_backend: "landmarks"
 gesture_recognizer_model_path: "/data/gesture_recognizer.task"
 enabled_gestures:
@@ -53,4 +53,4 @@ topic_filters:
     value: "person"
   - property: "after.top_score"
     comparator: ">"
-    value: "0.7"
+    value: "0.9"
