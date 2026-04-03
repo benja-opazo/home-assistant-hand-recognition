@@ -44,6 +44,12 @@ _DEFAULT_SCORE_THRESHOLD = 0.7
 # 0° = purely horizontal (x-axis). Positive = tilts toward palm-down direction.
 _DEFAULT_THUMB_ANGLE     = 35.0
 
+# The raw sigmoid score for the thumb only spans roughly 0.10–0.80 in practice
+# due to the thumb's non-linear retraction geometry.  Rescale so that the full
+# [0, 1] output range is used: raw ≤ MIN → 0, raw ≥ MAX → 1, linear between.
+_THUMB_SCORE_MIN = 0.10
+_THUMB_SCORE_MAX = 0.80
+
 
 def _rotate_landmarks(lm, angle: float) -> list[tuple[float, float]]:
     """Rotate all landmarks by -angle so the palm axis aligns with the y-axis."""
@@ -87,12 +93,21 @@ def _finger_scores(hand_landmarks, sigmoid_k: float, thumb_angle_deg: float = 0.
     x_sign = -1.0 if hand_label == "Left" else 1.0
 
     scores = []
+    # Detect whether the palm faces the camera or the back of the hand does.
+    # In the rotated frame, palm-facing means the thumb MCP (1) is on the
+    # negative-x side of the pinky MCP (17) after x_sign normalisation.
+    # When the back faces the camera the x-displacement of the thumb tip is
+    # mirrored, so we flip the sign of tdx to keep the score correct.
+    palm_facing  = x_sign * (pts[1][0] - pts[17][0]) < 0
+    orient       = 1.0 if palm_facing else -1.0
     # Thumb: project pip→tip displacement onto the configured opening direction
     thumb_rad    = np.radians(thumb_angle_deg)
     cos_t, sin_t = np.cos(thumb_rad), np.sin(thumb_rad)
-    tdx = x_sign * (pts[pips[0]][0] - pts[tips[0]][0])
+    tdx = orient * x_sign * (pts[pips[0]][0] - pts[tips[0]][0])
     tdy = pts[pips[0]][1] - pts[tips[0]][1]
-    scores.append(_sigmoid(sigmoid_k * (tdx * cos_t + tdy * sin_t) / palm_size))
+    thumb_raw = _sigmoid(sigmoid_k * (tdx * cos_t + tdy * sin_t) / palm_size)
+    thumb_score = (thumb_raw - _THUMB_SCORE_MIN) / (_THUMB_SCORE_MAX - _THUMB_SCORE_MIN)
+    scores.append(max(0.0, min(1.0, thumb_score)))
     # Other fingers: extension along y-axis (pip.y - tip.y > 0 means extended)
     for tip, pip in zip(tips[1:], pips[1:]):
         scores.append(_sigmoid(sigmoid_k * (pts[pip][1] - pts[tip][1]) / palm_size))
@@ -195,7 +210,8 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            hand_label          = handedness.classification[0].label
+            raw_label           = handedness.classification[0].label
+            hand_label          = "Left" if raw_label == "Right" else "Right"
             scores, angle_deg   = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
             gesture, confidence = _match_gesture(scores, self._score_threshold)
             detections.append({
@@ -224,7 +240,8 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            hand_label          = handedness.classification[0].label  # "Left" or "Right"
+            raw_label           = handedness.classification[0].label
+            hand_label          = "Left" if raw_label == "Right" else "Right"  # "Left" or "Right"
             scores, _           = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
             gesture, confidence = _match_gesture(scores, self._score_threshold)
 
