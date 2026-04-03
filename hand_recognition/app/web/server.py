@@ -173,6 +173,26 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
             return jsonify({"error": "Not found"}), 404
         return send_file(s["image_path"], mimetype="image/jpeg")
 
+    @app.post("/api/snapshots/<snapshot_id>/reclassify")
+    def reclassify_snapshot(snapshot_id):
+        s = snapshot_store.get_by_id(snapshot_id)
+        if not s:
+            return jsonify({"error": "Not found"}), 404
+        try:
+            import cv2
+            from recognizer_factory import create_recognizer
+            cfg        = load_config()
+            recognizer = create_recognizer(cfg)
+            image      = cv2.imread(s["image_path"])
+            if image is None:
+                return jsonify({"error": "Image file not found on disk"}), 404
+            detections = recognizer.recognize(image)
+            recognizer.close()
+            return jsonify({"detections": detections})
+        except Exception as e:
+            logger.error("Reclassify failed for %s: %s", snapshot_id, e)
+            return jsonify({"error": str(e)}), 500
+
     @app.delete("/api/snapshots/<snapshot_id>")
     def delete_snapshot(snapshot_id):
         if snapshot_store.delete(snapshot_id):
