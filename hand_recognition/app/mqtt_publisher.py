@@ -11,10 +11,13 @@ class MQTTPublisher:
         self._topic_template = topic_template
 
     def publish(self, camera: str, detections: list[dict]) -> None:
-        topic = self._topic_template.format(camera=camera)
+        topic   = self._topic_template.format(camera=camera)
+        by_hand = {d["hand"].lower(): d for d in detections}
+        empty   = {"gesture": "unknown", "score": 0}
         payload = json.dumps({
             "camera": camera,
-            "detections": detections,
+            "left":   by_hand.get("left",  empty),
+            "right":  by_hand.get("right", empty),
         })
         result = self._client.publish(topic, payload, qos=1)
         if result.rc != mqtt.MQTT_ERR_SUCCESS:

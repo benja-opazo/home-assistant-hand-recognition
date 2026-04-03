@@ -42,17 +42,12 @@ When a gesture is detected, the add-on publishes to the configured topic (defaul
 ```json
 {
   "camera": "front_door",
-  "detections": [
-    {
-      "gesture": "open_palm",
-      "score": 0.97,
-      "hand": "Right"
-    }
-  ]
+  "left":  { "gesture": "open_palm", "score": 0.97 },
+  "right": { "gesture": "unknown",   "score": 0 }
 }
 ```
 
-If no hands are detected in the snapshot, **nothing is published**.
+A message is always published for every processed snapshot. When a hand is not detected its entry contains `"gesture": "unknown"` and `"score": 0`.
 
 ## Recognition Backends
 
@@ -102,30 +97,30 @@ These are the values that appear in the `gesture` field of the MQTT payload. Whi
 
 | Value | Description |
 |-------|-------------|
-| `fist` | All fingers curled, closed fist |
-| `thumbs_up` | Thumb extended, all other fingers curled |
-| `pointing` | Index finger extended, all others curled |
-| `peace` | Index and middle fingers extended (V sign) |
-| `open_palm` | All five fingers extended |
-| `four_fingers` | Index, middle, ring, and pinky extended, thumb curled |
-| `three_fingers` | Index, middle, and ring fingers extended |
-| `rock_on` | Index and pinky extended, thumb out (horns sign) |
-| `call_me` | Thumb and pinky extended, other fingers curled |
-| `pinky` | Pinky finger only extended |
-| `unknown` | A hand was detected but did not match any gesture above the score threshold |
+| ✊ `fist` | All fingers curled, closed fist |
+| 👍 `thumbs_up` | Thumb extended, all other fingers curled |
+| ☝️ `pointing` | Index finger extended, all others curled |
+| ✌️ `peace` | Index and middle fingers extended (V sign) |
+| 🖐️ `open_palm` | All five fingers extended |
+| 🤚 `four_fingers` | Index, middle, ring, and pinky extended, thumb curled |
+| 🤟 `three_fingers` | Index, middle, and ring fingers extended |
+| 🤘 `rock_on` | Index and pinky extended, thumb out (horns sign) |
+| 🤙 `call_me` | Thumb and pinky extended, other fingers curled |
+| 🤙 `pinky` | Pinky finger only extended |
+| 🤔 `unknown` | A hand was detected but did not match any gesture above the score threshold |
 
 ### GestureRecognizer backend
 
 | Value | Description |
 |-------|-------------|
-| `fist` | Closed fist |
-| `open_palm` | All fingers extended |
-| `pointing` | Index finger pointing up |
-| `thumbs_up` | Thumbs up |
-| `thumbs_down` | Thumbs down |
-| `peace` | Index and middle fingers extended (V sign) |
-| `i_love_you` | Thumb, index, and pinky extended (ILY sign) |
-| `unknown` | A hand was detected but no gesture was confidently identified |
+| ✊ `fist` | Closed fist |
+| 🖐️ `open_palm` | All fingers extended |
+| ☝️ `pointing` | Index finger pointing up |
+| 👍 `thumbs_up` | Thumbs up |
+| 👎 `thumbs_down` | Thumbs down |
+| ✌️ `peace` | Index and middle fingers extended (V sign) |
+| 🤟 `i_love_you` | Thumb, index, and pinky extended (ILY sign) |
+| 🤔 `unknown` | A hand was detected but no gesture was confidently identified |
 
 ## Tips for Improving Hand Detection
 
@@ -194,8 +189,8 @@ triggers:
 conditions:
   - condition: template
     value_template: >-
-      {{ trigger.payload_json.detections[0].gesture in ['open_palm',
-      'four_fingers', 'three_fingers'] }}
+      {{ trigger.payload_json.left.gesture in ['open_palm', 'four_fingers', 'three_fingers']
+      or trigger.payload_json.right.gesture in ['open_palm', 'four_fingers', 'three_fingers'] }}
 action:
   - service: light.turn_on
     target:
@@ -216,8 +211,9 @@ action:
   - service: notify.persistent_notification
     data:
       message: >
-        {{ trigger.payload_json.detections[0].gesture }}
-        detected on {{ trigger.payload_json.camera }}
+        left: {{ trigger.payload_json.left.gesture }},
+        right: {{ trigger.payload_json.right.gesture }},
+        camera: {{ trigger.payload_json.camera }}
 mode: queued
 max: 10
 ```

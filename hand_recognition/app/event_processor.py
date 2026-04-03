@@ -61,6 +61,5 @@ class EventProcessor:
 
         if not detections:
             logger.info("No hands detected in snapshot for event %s", event_id)
-            return
 
         self._publisher.publish(camera or "unknown", detections)

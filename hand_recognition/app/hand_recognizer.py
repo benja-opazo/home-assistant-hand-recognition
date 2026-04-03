@@ -38,11 +38,11 @@ ALL_GESTURES: list[str] = list(GESTURES.values())
 
 
 # Defaults — overridden by config keys landmark_sigmoid_k / landmark_score_threshold / landmark_thumb_angle
-_DEFAULT_SIGMOID_K       = 6.0
+_DEFAULT_SIGMOID_K       = 10.0
 _DEFAULT_SCORE_THRESHOLD = 0.7
 # Thumb opening angle in degrees from horizontal in the rotated frame.
 # 0° = purely horizontal (x-axis). Positive = tilts toward palm-down direction.
-_DEFAULT_THUMB_ANGLE     = 35.0
+_DEFAULT_THUMB_ANGLE     = 0.0
 
 # The raw sigmoid score for the thumb only spans roughly 0.10–0.80 in practice
 # due to the thumb's non-linear retraction geometry.  Rescale so that the full

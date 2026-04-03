@@ -800,7 +800,7 @@
             <label for="landmark_sigmoid_k">Sigmoid sharpness (k)</label>
             <input id="landmark_sigmoid_k" name="landmark_sigmoid_k"
               type="number" step="0.5" min="0.5" max="20"
-              value="{{ config.landmark_sigmoid_k | default(6.0) }}" />
+              value="{{ config.landmark_sigmoid_k | default(10.0) }}" />
             <span class="hint">
               Controls how sharply a finger is classified as extended vs curled (0.5 – 20).
               Higher = more binary, lower = more gradual scoring.
@@ -819,7 +819,7 @@
             <label for="landmark_thumb_angle">Thumb opening angle (°)</label>
             <input id="landmark_thumb_angle" name="landmark_thumb_angle"
               type="number" step="5" min="-90" max="90"
-              value="{{ config.landmark_thumb_angle | default(35.0) }}" />
+              value="{{ config.landmark_thumb_angle | default(0.0) }}" />
             <span class="hint">
               Direction of thumb extension in the rotated frame (-90° – 90°).
               0° = purely horizontal. Increase toward 30–45° if the thumb is consistently underscored.
@@ -945,9 +945,9 @@
             <span class="debug-param-label">Sigmoid Sharpness (k)</span>
             <div class="debug-param-row">
               <input type="range" id="debug-sigmoid-k" min="0.5" max="20" step="0.5"
-                value="{{ config.landmark_sigmoid_k | default(6.0) }}" />
+                value="{{ config.landmark_sigmoid_k | default(10.0) }}" />
               <input type="number" id="debug-sigmoid-k-num" min="0.5" max="20" step="0.5"
-                value="{{ config.landmark_sigmoid_k | default(6.0) }}" />
+                value="{{ config.landmark_sigmoid_k | default(10.0) }}" />
             </div>
             <span class="hint">How sharply fingers are classified as extended vs curled. Higher = more binary.</span>
           </div>
@@ -967,9 +967,9 @@
             <span class="debug-param-label">Thumb Opening Angle (°)</span>
             <div class="debug-param-row">
               <input type="range" id="debug-thumb-angle" min="-90" max="90" step="5"
-                value="{{ config.landmark_thumb_angle | default(35.0) }}" />
+                value="{{ config.landmark_thumb_angle | default(0.0) }}" />
               <input type="number" id="debug-thumb-angle-num" min="-90" max="90" step="5"
-                value="{{ config.landmark_thumb_angle | default(35.0) }}" />
+                value="{{ config.landmark_thumb_angle | default(0.0) }}" />
             </div>
             <span class="hint">Thumb extension direction in the rotated hand frame (0° = horizontal).</span>
           </div>
