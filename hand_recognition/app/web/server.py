@@ -188,7 +188,9 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
                 return jsonify({"error": "Image file not found on disk"}), 404
             detections = recognizer.recognize(image)
             recognizer.close()
-            return jsonify({"detections": detections})
+            payload = {"detections": detections}
+            logger.debug("Reclassify response for %s: %s", snapshot_id, payload)
+            return jsonify(payload)
         except Exception as e:
             logger.error("Reclassify failed for %s: %s", snapshot_id, e)
             return jsonify({"error": str(e)}), 500

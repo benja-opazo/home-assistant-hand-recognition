@@ -1260,9 +1260,8 @@
       const btn = document.getElementById("modal-reclassify");
       btn.disabled = true; btn.textContent = "Classifying…";
       try {
-        const res  = await fetch(`/api/snapshots/${modalSnap.id}/reclassify`, {method:"POST"});
+        const res  = await fetch(URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${modalSnap.id}/reclassify`), {method:"POST"});
         const text = await res.text();
-        console.log("Reclassify raw response:", text);
         let json;
         try { json = JSON.parse(text); }
         catch(parseErr) { throw new Error(`Server returned non-JSON (${res.status}): ${text.slice(0, 300)}`); }
