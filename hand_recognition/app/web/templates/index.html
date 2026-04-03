@@ -423,6 +423,55 @@
       background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
       color: #e6edf3; font-size: .8rem; max-width: 180px; padding: 3px 8px;
     }
+    .debug-analysis-card {
+      background: #161b22; border: 1px solid #30363d; border-radius: 12px; overflow: hidden;
+    }
+    .debug-analysis-header {
+      align-items: center; border-bottom: 1px solid #30363d;
+      display: flex; gap: .75rem; justify-content: space-between; padding: .6rem 1rem;
+    }
+    .debug-analysis-title { color: #e6edf3; font-size: .9rem; font-weight: 600; }
+    #debug-interval-select {
+      background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+      color: #e6edf3; font-size: .8rem; padding: 2px 6px;
+    }
+    .debug-analysis-body { padding: .75rem 1rem; min-height: 4rem; }
+    .debug-analysis-idle { color: #484f58; font-size: .85rem; padding: .5rem 0; }
+    .debug-hand {
+      border: 1px solid #30363d; border-radius: 8px; margin-bottom: .75rem;
+      overflow: hidden;
+    }
+    .debug-hand:last-child { margin-bottom: 0; }
+    .debug-hand-header {
+      align-items: baseline; background: #0d1117; display: flex;
+      gap: .6rem; padding: .5rem .75rem; flex-wrap: wrap;
+    }
+    .debug-hand-gesture { color: #58a6ff; font-size: 1rem; font-weight: 700; }
+    .debug-hand-score   { color: #3fb950; font-size: .88rem; font-weight: 600; }
+    .debug-hand-meta    { color: #8b949e; font-size: .78rem; margin-left: auto; }
+    .debug-hand-body    { display: flex; flex-wrap: wrap; gap: 0; }
+    .debug-hand-section { flex: 1; min-width: 160px; padding: .6rem .75rem; }
+    .debug-hand-section + .debug-hand-section { border-left: 1px solid #21262d; }
+    .debug-section-label {
+      color: #484f58; font-size: .68rem; font-weight: 600; letter-spacing: .08em;
+      margin-bottom: .4rem; text-transform: uppercase;
+    }
+    .debug-bar-row {
+      align-items: center; display: flex; font-size: .78rem; gap: .5rem; margin-bottom: .3rem;
+    }
+    .debug-bar-name  { color: #8b949e; min-width: 4.5rem; }
+    .debug-bar-track {
+      background: #21262d; border-radius: 3px; flex: 1; height: 6px; overflow: hidden;
+    }
+    .debug-bar-fill  { background: #58a6ff; border-radius: 3px; height: 100%; transition: width .2s; }
+    .debug-bar-pct   { color: #e6edf3; min-width: 2.5rem; text-align: right; }
+    .debug-gesture-row {
+      align-items: center; display: flex; font-size: .78rem; gap: .4rem; margin-bottom: .25rem;
+    }
+    .debug-gesture-row.winner .debug-gesture-name { color: #58a6ff; font-weight: 600; }
+    .debug-gesture-row.winner .debug-gesture-pct  { color: #3fb950; font-weight: 600; }
+    .debug-gesture-name { color: #8b949e; flex: 1; }
+    .debug-gesture-pct  { color: #6e7681; min-width: 2.5rem; text-align: right; }
   </style>
 </head>
 <body>
@@ -861,6 +910,29 @@
         <div class="debug-webcam-status" id="debug-webcam-status"></div>
       </div>
 
+      <!-- Live Analysis -->
+      <div class="debug-analysis-card">
+        <div class="debug-analysis-header">
+          <span class="debug-analysis-title">Live Analysis</span>
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:.35rem;font-size:.8rem;color:#8b949e;cursor:pointer;user-select:none">
+              <input type="checkbox" id="debug-auto-analyze" style="accent-color:#58a6ff" />
+              Auto
+            </label>
+            <select id="debug-interval-select">
+              <option value="500">0.5 s</option>
+              <option value="1000" selected>1 s</option>
+              <option value="2000">2 s</option>
+              <option value="5000">5 s</option>
+            </select>
+            <button class="action-btn" id="btn-capture-analyze">Capture &amp; Analyze</button>
+          </div>
+        </div>
+        <div class="debug-analysis-body" id="debug-analysis-body">
+          <div class="debug-analysis-idle">Start the camera, then press Capture &amp; Analyze.</div>
+        </div>
+      </div>
+
       <!-- Parameters -->
       <div class="debug-params-card">
         <h1 style="font-size:1rem;margin-bottom:.15rem">Algorithm Parameters</h1>
@@ -992,8 +1064,9 @@
     const URL_SNAPSHOTS      = {{ url_for('get_snapshots')         | tojson }};
     const URL_SNAPS_CLEAR    = {{ url_for('clear_snapshots')       | tojson }};
     const URL_SNAPS_DOWNLOAD = {{ url_for('download_snapshots_zip')| tojson }};
-    const URL_RESTART  = {{ url_for('restart')  | tojson }};
-    const URL_SHUTDOWN = {{ url_for('shutdown') | tojson }};
+    const URL_RESTART       = {{ url_for('restart')       | tojson }};
+    const URL_SHUTDOWN      = {{ url_for('shutdown')      | tojson }};
+    const URL_DEBUG_ANALYZE = {{ url_for('debug_analyze') | tojson }};
 
     function snapImageUrl(id)  { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}/image`); }
     function snapDeleteUrl(id) { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}`); }
@@ -1730,7 +1803,23 @@
       const statusEl    = document.getElementById("debug-webcam-status");
       const camSelect   = document.getElementById("debug-cam-select");
 
+      const secureCtx = !!navigator.mediaDevices;
+
+      function showInsecureWarning() {
+        placeholder.innerHTML =
+          `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#e3b341" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>` +
+          `<span style="color:#e3b341;font-weight:600">Camera unavailable</span>` +
+          `<span style="color:#8b949e;font-size:.78rem;max-width:320px;text-align:center">` +
+          `Camera access requires a secure context (HTTPS or localhost).<br>` +
+          `The add-on is served over HTTP, so the browser blocks <code>getUserMedia</code>.<br>` +
+          `Access the UI via <strong>HTTPS</strong> or an SSL-terminated proxy to use this feature.` +
+          `</span>`;
+        btnStart.disabled = true;
+        camSelect.disabled = true;
+      }
+
       async function populateCameras() {
+        if (!secureCtx) { showInsecureWarning(); return; }
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
           const cams = devices.filter(d => d.kind === "videoinput");
@@ -1751,6 +1840,7 @@
       }
 
       async function startWebcam() {
+        if (!secureCtx) { showInsecureWarning(); return; }
         const deviceId = camSelect.value;
         try {
           statusEl.textContent = "Requesting camera…";
@@ -1782,10 +1872,14 @@
       btnStart.addEventListener("click", startWebcam);
       btnStop.addEventListener("click",  stopWebcam);
 
-      // Stop webcam when navigating away from debug tab
+      // Stop webcam and auto-analyze when navigating away from debug tab
       document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-          if (btn.dataset.tab !== "debug" && webcamStream) stopWebcam();
+          if (btn.dataset.tab !== "debug") {
+            if (webcamStream) stopWebcam();
+            stopAutoTimer();
+            autoCheckbox.checked = false;
+          }
         });
       });
 
@@ -1804,6 +1898,90 @@
         s.addEventListener("input", () => { n.value = s.value; });
         n.addEventListener("input", () => { s.value = n.value; });
       });
+
+      // ── Live analysis ────────────────────────────────────────────
+      const analysisBody  = document.getElementById("debug-analysis-body");
+      const btnCapture    = document.getElementById("btn-capture-analyze");
+      const autoCheckbox  = document.getElementById("debug-auto-analyze");
+      const intervalSel   = document.getElementById("debug-interval-select");
+      const captureCanvas = document.createElement("canvas");
+      let   autoTimer     = null;
+      let   analyzing     = false;
+
+      function renderAnalysis(json) {
+        if (!json.detections || !json.detections.length) {
+          analysisBody.innerHTML = `<div class="debug-analysis-idle">No hands detected.</div>`;
+          return;
+        }
+        analysisBody.innerHTML = json.detections.map(d => {
+          const pct  = n => Math.round(n * 100);
+          const bars = d.finger_scores
+            ? Object.entries(d.finger_scores).map(([name, s]) =>
+                `<div class="debug-bar-row">
+                  <span class="debug-bar-name">${name}</span>
+                  <div class="debug-bar-track"><div class="debug-bar-fill" style="width:${pct(s)}%"></div></div>
+                  <span class="debug-bar-pct">${pct(s)}%</span>
+                </div>`).join("")
+            : "";
+          const gestures = d.all_scores
+            ? d.all_scores.map(g =>
+                `<div class="debug-gesture-row${g.gesture === d.gesture ? " winner" : ""}">
+                  <span class="debug-gesture-name">${GESTURE_EMOJI[g.gesture] || "?"} ${g.gesture.replace(/_/g," ")}</span>
+                  <span class="debug-gesture-pct">${pct(g.score)}%</span>
+                </div>`).join("")
+            : "";
+          const rotation = d.rotation_deg !== undefined ? ` · ${d.rotation_deg}°` : "";
+          return `<div class="debug-hand">
+            <div class="debug-hand-header">
+              <span class="debug-hand-gesture">${GESTURE_EMOJI[d.gesture] || "?"} ${d.gesture.replace(/_/g," ")}</span>
+              <span class="debug-hand-score">${pct(d.score)}%</span>
+              <span class="debug-hand-meta">${escHtml(d.hand)} hand${rotation}</span>
+            </div>
+            <div class="debug-hand-body">
+              ${bars ? `<div class="debug-hand-section"><div class="debug-section-label">Fingers</div>${bars}</div>` : ""}
+              ${gestures ? `<div class="debug-hand-section"><div class="debug-section-label">Gestures</div>${gestures}</div>` : ""}
+            </div>
+          </div>`;
+        }).join("");
+      }
+
+      async function captureAndAnalyze() {
+        if (analyzing || !webcamStream) return;
+        analyzing = true;
+        btnCapture.disabled = true;
+        try {
+          captureCanvas.width  = video.videoWidth  || 640;
+          captureCanvas.height = video.videoHeight || 480;
+          captureCanvas.getContext("2d").drawImage(video, 0, 0);
+          const blob = await new Promise(res => captureCanvas.toBlob(res, "image/jpeg", 0.92));
+          const fd   = new FormData();
+          fd.append("image", blob, "frame.jpg");
+          const res  = await fetch(URL_DEBUG_ANALYZE, { method: "POST", body: fd });
+          const json = await res.json();
+          if (!res.ok) {
+            analysisBody.innerHTML = `<div class="debug-analysis-idle" style="color:#f85149">Error: ${escHtml(json.error || res.statusText)}</div>`;
+          } else {
+            renderAnalysis(json);
+          }
+        } catch(e) {
+          analysisBody.innerHTML = `<div class="debug-analysis-idle" style="color:#f85149">Network error: ${escHtml(e.message)}</div>`;
+        } finally {
+          analyzing = false;
+          btnCapture.disabled = false;
+        }
+      }
+
+      function startAutoTimer() {
+        stopAutoTimer();
+        autoTimer = setInterval(() => { if (webcamStream) captureAndAnalyze(); }, parseInt(intervalSel.value, 10));
+      }
+      function stopAutoTimer() { if (autoTimer) { clearInterval(autoTimer); autoTimer = null; } }
+
+      btnCapture.addEventListener("click", captureAndAnalyze);
+      autoCheckbox.addEventListener("change", () => {
+        if (autoCheckbox.checked) startAutoTimer(); else stopAutoTimer();
+      });
+      intervalSel.addEventListener("change", () => { if (autoCheckbox.checked) startAutoTimer(); });
 
       // ── Save parameters ─────────────────────────────────────────
       document.getElementById("btn-debug-save-params").addEventListener("click", async () => {

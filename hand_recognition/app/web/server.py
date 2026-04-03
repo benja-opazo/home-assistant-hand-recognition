@@ -203,6 +203,31 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
             logger.error("Reclassify failed for %s: %s", snapshot_id, e)
             return jsonify({"error": str(e)}), 500
 
+    @app.post("/api/debug/analyze")
+    def debug_analyze():
+        if "image" not in request.files:
+            return jsonify({"error": "No image provided"}), 400
+        try:
+            import cv2
+            import numpy as np
+            from recognizer_factory import create_recognizer
+            file_bytes = np.frombuffer(request.files["image"].read(), dtype=np.uint8)
+            image      = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+            if image is None:
+                return jsonify({"error": "Could not decode image"}), 400
+            cfg        = load_config()
+            recognizer = create_recognizer(cfg)
+            detections = (
+                recognizer.recognize_debug(image)
+                if hasattr(recognizer, "recognize_debug")
+                else recognizer.recognize(image)
+            )
+            recognizer.close()
+            return jsonify({"detections": detections, "debug": True})
+        except Exception as e:
+            logger.error("Debug analyze failed: %s", e)
+            return jsonify({"error": str(e)}), 500
+
     @app.delete("/api/snapshots/<snapshot_id>")
     def delete_snapshot(snapshot_id):
         if snapshot_store.delete(snapshot_id):
