@@ -906,6 +906,7 @@
             Camera not started
           </div>
           <video id="debug-webcam" autoplay playsinline muted style="display:none"></video>
+          <canvas id="debug-skeleton" style="display:none;left:0;pointer-events:none;position:absolute;top:0"></canvas>
         </div>
         <div class="debug-webcam-status" id="debug-webcam-status"></div>
       </div>
@@ -1867,6 +1868,7 @@
         btnStart.disabled = false;
         btnStop.disabled  = true;
         statusEl.textContent = "Camera stopped";
+        clearSkeleton();
       }
 
       btnStart.addEventListener("click", startWebcam);
@@ -1945,6 +1947,76 @@
         }).join("");
       }
 
+      // ── Skeleton overlay ─────────────────────────────────────────
+      const skelCanvas = document.getElementById("debug-skeleton");
+      const skelCtx    = skelCanvas.getContext("2d");
+
+      // MediaPipe hand topology, grouped by finger for colour-coding
+      const SKEL_GROUPS = [
+        { color: "#8b949e", pairs: [[0,1],[0,5],[0,9],[0,13],[0,17],[5,9],[9,13],[13,17]] }, // palm
+        { color: "#e3b341", pairs: [[1,2],[2,3],[3,4]]            }, // thumb
+        { color: "#58a6ff", pairs: [[5,6],[6,7],[7,8]]            }, // index
+        { color: "#3fb950", pairs: [[9,10],[10,11],[11,12]]        }, // middle
+        { color: "#f78166", pairs: [[13,14],[14,15],[15,16]]       }, // ring
+        { color: "#d2a8ff", pairs: [[17,18],[18,19],[19,20]]       }, // pinky
+      ];
+
+      // Returns the sub-rect where the video frame is actually rendered
+      // (accounts for object-fit:contain letterboxing)
+      function videoRenderRect() {
+        const vw = video.videoWidth, vh = video.videoHeight;
+        const cw = video.clientWidth, ch = video.clientHeight;
+        if (!vw || !vh) return { x: 0, y: 0, w: cw, h: ch };
+        const scale = Math.min(cw / vw, ch / vh);
+        const rw = vw * scale, rh = vh * scale;
+        return { x: (cw - rw) / 2, y: (ch - rh) / 2, w: rw, h: rh };
+      }
+
+      function drawSkeleton(detections) {
+        skelCanvas.width  = video.clientWidth;
+        skelCanvas.height = video.clientHeight;
+        skelCtx.clearRect(0, 0, skelCanvas.width, skelCanvas.height);
+
+        const hasLandmarks = detections && detections.some(d => d.landmarks && d.landmarks.length);
+        skelCanvas.style.display = hasLandmarks ? "block" : "none";
+        if (!hasLandmarks) return;
+
+        const r = videoRenderRect();
+
+        detections.forEach(d => {
+          if (!d.landmarks) return;
+          const lms = d.landmarks;
+          const px = i => r.x + lms[i].x * r.w;
+          const py = i => r.y + lms[i].y * r.h;
+
+          // Bones
+          skelCtx.lineWidth = 2;
+          skelCtx.lineCap   = "round";
+          SKEL_GROUPS.forEach(({ color, pairs }) => {
+            skelCtx.strokeStyle = color;
+            pairs.forEach(([a, b]) => {
+              skelCtx.beginPath();
+              skelCtx.moveTo(px(a), py(a));
+              skelCtx.lineTo(px(b), py(b));
+              skelCtx.stroke();
+            });
+          });
+
+          // Joints
+          lms.forEach((lm, i) => {
+            skelCtx.beginPath();
+            skelCtx.arc(r.x + lm.x * r.w, r.y + lm.y * r.h, i === 0 ? 4 : 3, 0, Math.PI * 2);
+            skelCtx.fillStyle = i === 0 ? "#ffffff" : "#58a6ff";
+            skelCtx.fill();
+          });
+        });
+      }
+
+      function clearSkeleton() {
+        skelCtx.clearRect(0, 0, skelCanvas.width, skelCanvas.height);
+        skelCanvas.style.display = "none";
+      }
+
       async function captureAndAnalyze() {
         if (analyzing || !webcamStream) return;
         analyzing = true;
@@ -1960,11 +2032,14 @@
           const json = await res.json();
           if (!res.ok) {
             analysisBody.innerHTML = `<div class="debug-analysis-idle" style="color:#f85149">Error: ${escHtml(json.error || res.statusText)}</div>`;
+            clearSkeleton();
           } else {
             renderAnalysis(json);
+            drawSkeleton(json.detections);
           }
         } catch(e) {
           analysisBody.innerHTML = `<div class="debug-analysis-idle" style="color:#f85149">Network error: ${escHtml(e.message)}</div>`;
+          clearSkeleton();
         } finally {
           analyzing = false;
           btnCapture.disabled = false;

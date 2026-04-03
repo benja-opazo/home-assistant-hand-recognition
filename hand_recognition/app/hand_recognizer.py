@@ -205,6 +205,7 @@ class HandRecognizer:
                 "rotation_deg":  angle_deg,
                 "finger_scores": {name: round(s, 3) for name, s in zip(_FINGER_NAMES, scores)},
                 "all_scores":    _all_gesture_scores(scores),
+                "landmarks":     [{"x": round(lm.x, 4), "y": round(lm.y, 4)} for lm in hand_landmarks.landmark],
             })
         return detections
 
