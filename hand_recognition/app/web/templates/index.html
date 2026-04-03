@@ -1283,13 +1283,26 @@
       return json.detections.map(d => {
         const winner = `${GESTURE_EMOJI[d.gesture]||"?"} ${d.gesture.replace(/_/g," ")} <span style="opacity:.6;font-weight:400">${Math.round(d.score*100)}%</span>`;
         if (!json.debug || !d.all_scores) return `<span class="gesture-tag detected">${winner}</span>`;
-        const rows = d.all_scores.map(g =>
+        const fingerRows = d.finger_scores
+          ? Object.entries(d.finger_scores).map(([name, s]) =>
+              `<span style="display:flex;justify-content:space-between;gap:1rem">`+
+              `<span style="opacity:.7">${name}</span><span>${Math.round(s*100)}%</span></span>`
+            ).join("")
+          : "";
+        const gestureRows = d.all_scores.map(g =>
           `<span style="display:flex;justify-content:space-between;gap:1rem;${g.gesture===d.gesture?"color:#58a6ff":""}">`+
           `<span>${GESTURE_EMOJI[g.gesture]||"?"} ${g.gesture.replace(/_/g," ")}</span>`+
           `<span>${Math.round(g.score*100)}%</span></span>`
         ).join("");
+        const rotation = d.rotation_deg !== undefined
+          ? `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">rotation ${d.rotation_deg}°</span>`
+          : "";
         return `<span class="gesture-tag detected" style="display:block;padding:.4rem .5rem">${winner}`+
-               `<span style="display:block;margin-top:.4rem;font-size:.72rem;font-weight:400;opacity:.85">${rows}</span></span>`;
+               `<span style="display:block;margin-top:.4rem;font-size:.72rem;font-weight:400;opacity:.85">`+
+               `${rotation}`+
+               `<span style="display:block;opacity:.5;font-size:.68rem;margin:.2rem 0 .1rem">fingers</span>${fingerRows}`+
+               `<span style="display:block;opacity:.5;font-size:.68rem;margin:.35rem 0 .1rem">gestures</span>${gestureRows}`+
+               `</span></span>`;
       }).join("");
     }
 

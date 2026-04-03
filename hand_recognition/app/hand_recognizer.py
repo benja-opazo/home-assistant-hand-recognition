@@ -54,10 +54,14 @@ def _sigmoid(x: float) -> float:
     return 1.0 / (1.0 + np.exp(-x))
 
 
-def _finger_scores(hand_landmarks, sigmoid_k: float) -> tuple[float, ...]:
-    """Return a continuous extension score in [0, 1] for each finger.
+_FINGER_NAMES = ("thumb", "index", "middle", "ring", "pinky")
 
-    1.0 = fully extended, 0.0 = fully curled.
+
+def _finger_scores(hand_landmarks, sigmoid_k: float) -> tuple[tuple[float, ...], float]:
+    """Return (scores, angle_deg).
+
+    scores: continuous extension score in [0, 1] for each finger, order = _FINGER_NAMES.
+    angle_deg: palm rotation in degrees (0 = upright, positive = clockwise).
     """
     lm = hand_landmarks.landmark
     tips = [4, 8, 12, 16, 20]
@@ -77,7 +81,7 @@ def _finger_scores(hand_landmarks, sigmoid_k: float) -> tuple[float, ...]:
     # Other fingers: extension along y-axis (pip.y - tip.y > 0 means extended)
     for tip, pip in zip(tips[1:], pips[1:]):
         scores.append(_sigmoid(sigmoid_k * (pts[pip][1] - pts[tip][1]) / palm_size))
-    return tuple(scores)
+    return tuple(scores), round(float(np.degrees(angle)), 1)
 
 
 def _match_gesture(scores: tuple[float, ...], score_threshold: float) -> tuple[str, float]:
@@ -153,14 +157,16 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            scores              = _finger_scores(hand_landmarks, self._sigmoid_k)
+            scores, angle_deg   = _finger_scores(hand_landmarks, self._sigmoid_k)
             gesture, confidence = _match_gesture(scores, self._score_threshold)
             hand_label          = handedness.classification[0].label
             detections.append({
-                "gesture":    gesture,
-                "score":      confidence,
-                "hand":       hand_label,
-                "all_scores": _all_gesture_scores(scores),
+                "gesture":       gesture,
+                "score":         confidence,
+                "hand":          hand_label,
+                "rotation_deg":  angle_deg,
+                "finger_scores": {name: round(s, 3) for name, s in zip(_FINGER_NAMES, scores)},
+                "all_scores":    _all_gesture_scores(scores),
             })
         return detections
 
@@ -179,7 +185,7 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            scores              = _finger_scores(hand_landmarks, self._sigmoid_k)
+            scores, _           = _finger_scores(hand_landmarks, self._sigmoid_k)
             gesture, confidence = _match_gesture(scores, self._score_threshold)
 
             if gesture != "unknown" and gesture not in self._enabled:
