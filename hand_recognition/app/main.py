@@ -41,7 +41,7 @@ def main():
 
     threading.Thread(target=listener.start, daemon=True).start()
 
-    flask_app = create_app(config, log_handler, snapshot_store, recognizer.available_gestures())
+    flask_app = create_app(config, log_handler, snapshot_store, recognizer.available_gestures(), recognizer)
 
     logger.info("Web UI available on port %d", config["web_ui_port"])
     serve(flask_app, host="0.0.0.0", port=config["web_ui_port"], threads=8)

@@ -29,6 +29,7 @@ mediapipe_max_num_hands: 2
 mediapipe_model_complexity: 1
 landmark_sigmoid_k: 4.0
 landmark_score_threshold: 0.6
+landmark_thumb_angle: 0.0
 recognizer_backend: "landmarks"
 gesture_recognizer_model_path: "/data/gesture_recognizer.task"
 enabled_gestures:

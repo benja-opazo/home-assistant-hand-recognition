@@ -32,7 +32,7 @@ class _ReverseProxied:
         return self.app(environ, start_response)
 
 
-def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: SnapshotStore, available_gestures: list[tuple[str, str]] | None = None) -> Flask:
+def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: SnapshotStore, available_gestures: list[tuple[str, str]] | None = None, recognizer=None) -> Flask:
     app = Flask(__name__, template_folder="templates")
     app.wsgi_app = _ReverseProxied(app.wsgi_app)
     app.config["current_config"] = config
@@ -66,7 +66,7 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
                           "mediapipe_max_num_hands", "mediapipe_model_complexity",
                           "frigate_snapshot_quality", "frigate_snapshot_height",
                           "frigate_snapshot_crop"]
-            float_fields = ["mediapipe_min_detection_confidence", "landmark_sigmoid_k", "landmark_score_threshold"]
+            float_fields = ["mediapipe_min_detection_confidence", "landmark_sigmoid_k", "landmark_score_threshold", "landmark_thumb_angle"]
 
             for field in float_fields:
                 if field in data:
@@ -105,6 +105,9 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
 
             save_config(cfg)
             app.config["current_config"] = cfg
+
+            if recognizer is not None and hasattr(recognizer, "reload_config"):
+                recognizer.reload_config(cfg)
 
             if "max_snapshots" in data:
                 snapshot_store.update_max(cfg["max_snapshots"])

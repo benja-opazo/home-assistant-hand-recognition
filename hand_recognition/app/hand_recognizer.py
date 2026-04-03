@@ -37,9 +37,13 @@ GESTURE_LABELS: dict[str, str] = {
 ALL_GESTURES: list[str] = list(GESTURES.values())
 
 
-# Defaults — overridden by config keys landmark_sigmoid_k / landmark_score_threshold
+# Defaults — overridden by config keys landmark_sigmoid_k / landmark_score_threshold / landmark_thumb_angle
 _DEFAULT_SIGMOID_K       = 4.0
 _DEFAULT_SCORE_THRESHOLD = 0.6
+# Thumb opening angle in degrees from horizontal in the rotated frame.
+# 0° = purely horizontal (x-axis). Positive = tilts toward palm-down direction.
+# Try 30–45° if the thumb is consistently underscored.
+_DEFAULT_THUMB_ANGLE     = 0.0
 
 
 def _rotate_landmarks(lm, angle: float) -> list[tuple[float, float]]:
@@ -57,11 +61,13 @@ def _sigmoid(x: float) -> float:
 _FINGER_NAMES = ("thumb", "index", "middle", "ring", "pinky")
 
 
-def _finger_scores(hand_landmarks, sigmoid_k: float) -> tuple[tuple[float, ...], float]:
+def _finger_scores(hand_landmarks, sigmoid_k: float, thumb_angle_deg: float = 0.0) -> tuple[tuple[float, ...], float]:
     """Return (scores, angle_deg).
 
     scores: continuous extension score in [0, 1] for each finger, order = _FINGER_NAMES.
     angle_deg: palm rotation in degrees (0 = upright, positive = clockwise).
+    thumb_angle_deg: direction of thumb extension in the rotated frame, measured from
+        horizontal (0° = x-axis only, 45° = equal x+y component).
     """
     lm = hand_landmarks.landmark
     tips = [4, 8, 12, 16, 20]
@@ -76,11 +82,16 @@ def _finger_scores(hand_landmarks, sigmoid_k: float) -> tuple[tuple[float, ...],
     pts = _rotate_landmarks(lm, angle)
 
     scores = []
-    # Thumb: extension along x-axis in rotated frame
-    scores.append(_sigmoid(sigmoid_k * (pts[pips[0]][0] - pts[tips[0]][0]) / palm_size))
+    # Thumb: project pip→tip displacement onto the configured opening direction
+    thumb_rad  = np.radians(thumb_angle_deg)
+    cos_t, sin_t = np.cos(thumb_rad), np.sin(thumb_rad)
+    tdx = pts[pips[0]][0] - pts[tips[0]][0]
+    tdy = pts[pips[0]][1] - pts[tips[0]][1]
+    scores.append(_sigmoid(sigmoid_k * (tdx * cos_t + tdy * sin_t) / palm_size))
     # Other fingers: extension along y-axis (pip.y - tip.y > 0 means extended)
     for tip, pip in zip(tips[1:], pips[1:]):
         scores.append(_sigmoid(sigmoid_k * (pts[pip][1] - pts[tip][1]) / palm_size))
+
     angle_deg = float(np.degrees(angle))
     angle_deg = ((angle_deg + 180) % 360) - 180  # normalise to [-180, 180]
     return tuple(scores), round(angle_deg, 1)
@@ -126,9 +137,10 @@ class HandRecognizer:
     def __init__(self, config: dict | None = None):
         cfg = config or {}
         enabled = cfg.get("enabled_gestures", ALL_GESTURES)
-        self._enabled: set[str]  = set(enabled) if enabled else set(ALL_GESTURES)
-        self._sigmoid_k: float   = float(cfg.get("landmark_sigmoid_k",       _DEFAULT_SIGMOID_K))
+        self._enabled: set[str]      = set(enabled) if enabled else set(ALL_GESTURES)
+        self._sigmoid_k: float       = float(cfg.get("landmark_sigmoid_k",       _DEFAULT_SIGMOID_K))
         self._score_threshold: float = float(cfg.get("landmark_score_threshold", _DEFAULT_SCORE_THRESHOLD))
+        self._thumb_angle: float     = float(cfg.get("landmark_thumb_angle",     _DEFAULT_THUMB_ANGLE))
 
         self._hands = mp.solutions.hands.Hands(
             static_image_mode=True,
@@ -138,13 +150,32 @@ class HandRecognizer:
         )
         logger.info(
             "MediaPipe Hands initialised — complexity=%s, min_confidence=%.2f, "
-            "max_hands=%s, sigmoid_k=%.1f, score_threshold=%.2f, enabled_gestures=%s",
+            "max_hands=%s, sigmoid_k=%.1f, score_threshold=%.2f, thumb_angle=%.1f°, enabled_gestures=%s",
             cfg.get("mediapipe_model_complexity", 1),
             float(cfg.get("mediapipe_min_detection_confidence", 0.5)),
             cfg.get("mediapipe_max_num_hands", 2),
             self._sigmoid_k,
             self._score_threshold,
+            self._thumb_angle,
             sorted(self._enabled),
+        )
+
+    def reload_config(self, config: dict) -> None:
+        """Hot-reload scoring parameters without recreating the MediaPipe model.
+
+        Parameters that require a restart (max_num_hands, min_detection_confidence,
+        model_complexity, recognizer_backend) are intentionally ignored here.
+        """
+        cfg = config or {}
+        enabled = cfg.get("enabled_gestures", ALL_GESTURES)
+        self._enabled         = set(enabled) if enabled else set(ALL_GESTURES)
+        self._sigmoid_k       = float(cfg.get("landmark_sigmoid_k",       _DEFAULT_SIGMOID_K))
+        self._score_threshold = float(cfg.get("landmark_score_threshold", _DEFAULT_SCORE_THRESHOLD))
+        self._thumb_angle     = float(cfg.get("landmark_thumb_angle",     _DEFAULT_THUMB_ANGLE))
+        logger.info(
+            "Detection parameters reloaded — sigmoid_k=%.1f, score_threshold=%.2f, "
+            "thumb_angle=%.1f°, enabled_gestures=%s",
+            self._sigmoid_k, self._score_threshold, self._thumb_angle, sorted(self._enabled),
         )
 
     def recognize_debug(self, image: np.ndarray) -> list[dict]:
@@ -159,7 +190,7 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            scores, angle_deg   = _finger_scores(hand_landmarks, self._sigmoid_k)
+            scores, angle_deg   = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle)
             gesture, confidence = _match_gesture(scores, self._score_threshold)
             hand_label          = handedness.classification[0].label
             detections.append({
@@ -187,7 +218,7 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            scores, _           = _finger_scores(hand_landmarks, self._sigmoid_k)
+            scores, _           = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle)
             gesture, confidence = _match_gesture(scores, self._score_threshold)
 
             if gesture != "unknown" and gesture not in self._enabled:

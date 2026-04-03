@@ -168,6 +168,18 @@ The **Connections** tab exposes three Frigate API parameters that affect what th
 
 If hands are missed when the subject is at an angle or partially out of frame, lowering `mediapipe_min_detection_confidence` (default `0.5`) to around `0.35`–`0.4` can help. This makes the model more willing to report a detection at the cost of slightly more false positives.
 
+### Tuning the Landmarks backend
+
+The Landmarks backend exposes three scoring parameters that can be adjusted live from the MediaPipe tab without restarting:
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| **Sigmoid sharpness (k)** | `4.0` | Controls how sharply the transition from "curled" to "extended" is scored. Higher values behave more like a binary on/off. Lower values give a more gradual curve, which can help on ambiguous poses. |
+| **Score threshold** | `0.6` | Minimum average match score for a gesture to be reported. Raise this to reduce false positives; lower it if valid gestures are coming back as `unknown`. |
+| **Thumb opening angle** | `0°` | Direction of thumb extension in the rotated hand frame, measured from horizontal. The thumb does not open purely sideways — if `thumbs_up`, `open_palm`, or any thumb-dependent gesture is consistently underscored, try increasing this toward 30°–45°. The right value varies by person and camera angle. |
+
+Use the **Reclassify** button on any snapshot (or enable **Debug mode** in the HA add-on options for full per-finger scores) to see how parameter changes affect a specific image before committing to them.
+
 ---
 
 ## Home Assistant Automation Example
