@@ -103,6 +103,19 @@ def _match_gesture(scores: tuple[float, ...], score_threshold: float) -> tuple[s
     return best_name, round(best_score, 3)
 
 
+def _all_gesture_scores(finger_scores: tuple[float, ...]) -> list[dict]:
+    """Return all gestures with their match scores, sorted descending."""
+    results = []
+    for pattern, name in GESTURES.items():
+        score = sum(
+            s if expected else (1.0 - s)
+            for s, expected in zip(finger_scores, pattern)
+        ) / len(pattern)
+        results.append({"gesture": name, "score": round(score, 3)})
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results
+
+
 class HandRecognizer:
     def __init__(self, config: dict | None = None):
         cfg = config or {}
@@ -127,6 +140,29 @@ class HandRecognizer:
             self._score_threshold,
             sorted(self._enabled),
         )
+
+    def recognize_debug(self, image: np.ndarray) -> list[dict]:
+        """Like recognize(), but each detection includes all_scores: sorted list of every gesture with its score."""
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self._hands.process(rgb)
+
+        if not results.multi_hand_landmarks:
+            return []
+
+        detections = []
+        for hand_landmarks, handedness in zip(
+            results.multi_hand_landmarks, results.multi_handedness
+        ):
+            scores              = _finger_scores(hand_landmarks, self._sigmoid_k)
+            gesture, confidence = _match_gesture(scores, self._score_threshold)
+            hand_label          = handedness.classification[0].label
+            detections.append({
+                "gesture":    gesture,
+                "score":      confidence,
+                "hand":       hand_label,
+                "all_scores": _all_gesture_scores(scores),
+            })
+        return detections
 
     def available_gestures(self) -> list[tuple[str, str]]:
         """Return [(value, label), ...] for all gestures this recognizer supports."""

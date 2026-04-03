@@ -186,9 +186,13 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
             image      = cv2.imread(s["image_path"])
             if image is None:
                 return jsonify({"error": "Image file not found on disk"}), 404
-            detections = recognizer.recognize(image)
+            debug      = bool(cfg.get("debug_mode", False))
+            detections = (
+                recognizer.recognize_debug(image) if debug and hasattr(recognizer, "recognize_debug")
+                else recognizer.recognize(image)
+            )
             recognizer.close()
-            payload = {"detections": detections}
+            payload = {"detections": detections, "debug": debug}
             logger.debug("Reclassify response for %s: %s", snapshot_id, payload)
             return jsonify(payload)
         except Exception as e:
