@@ -1295,8 +1295,8 @@
           `<span>${Math.round(g.score*100)}%</span></span>`
         ).join("");
         const rotation = d.rotation_deg !== undefined
-          ? `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">rotation ${d.rotation_deg}°</span>`
-          : "";
+          ? `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">${d.hand} hand · rotation ${d.rotation_deg}°</span>`
+          : `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">${d.hand} hand</span>`;
         return `<span class="gesture-tag detected" style="display:block;padding:.4rem .5rem">${winner}`+
                `<span style="display:block;margin-top:.4rem;font-size:.72rem;font-weight:400;opacity:.85">`+
                `${rotation}`+

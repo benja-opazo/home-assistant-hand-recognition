@@ -70,7 +70,7 @@ def _finger_scores(hand_landmarks, sigmoid_k: float) -> tuple[tuple[float, ...],
     # Compute palm orientation: wrist (0) → middle MCP (9)
     dx = lm[9].x - lm[0].x
     dy = lm[9].y - lm[0].y
-    angle     = np.arctan2(dy, dx) - np.pi / 2  # offset so "up" = 0
+    angle     = np.arctan2(dy, dx) + np.pi / 2  # offset so "up" = 0 (y increases downward)
     palm_size = np.hypot(dx, dy) or 1e-6         # normalise by hand scale
 
     pts = _rotate_landmarks(lm, angle)
@@ -81,7 +81,9 @@ def _finger_scores(hand_landmarks, sigmoid_k: float) -> tuple[tuple[float, ...],
     # Other fingers: extension along y-axis (pip.y - tip.y > 0 means extended)
     for tip, pip in zip(tips[1:], pips[1:]):
         scores.append(_sigmoid(sigmoid_k * (pts[pip][1] - pts[tip][1]) / palm_size))
-    return tuple(scores), round(float(np.degrees(angle)), 1)
+    angle_deg = float(np.degrees(angle))
+    angle_deg = ((angle_deg + 180) % 360) - 180  # normalise to [-180, 180]
+    return tuple(scores), round(angle_deg, 1)
 
 
 def _match_gesture(scores: tuple[float, ...], score_threshold: float) -> tuple[str, float]:
