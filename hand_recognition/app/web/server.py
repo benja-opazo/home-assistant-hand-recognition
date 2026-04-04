@@ -209,7 +209,13 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
             )
             recognizer.close()
             if debug and publisher is not None:
-                publisher.publish(s["camera"], detections)
+                enabled = set(cfg.get("enabled_gestures") or [])
+                publish_detections = [
+                    {"gesture": d["gesture"], "score": d["score"], "hand": d["hand"]}
+                    for d in detections
+                    if not enabled or d["gesture"] == "unknown" or d["gesture"] in enabled
+                ]
+                publisher.publish(s["camera"], publish_detections)
             payload = {"detections": detections, "debug": debug}
             logger.debug("Reclassify response for %s: %s", snapshot_id, payload)
             return jsonify(payload)
