@@ -4,475 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hand Recognition</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: system-ui, sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-    }
-
-    /* ── Tabs ──────────────────────────────────────────────────── */
-    .tabs {
-      display: flex; gap: 2px; margin-bottom: 1.5rem;
-      border-bottom: 1px solid #30363d; width: 100%; max-width: 960px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    .tabs::-webkit-scrollbar { display: none; }
-    .tab-btn {
-      background: none; border: none; border-bottom: 2px solid transparent;
-      color: #8b949e; cursor: pointer; font-size: .9rem; flex-shrink: 0;
-      margin-bottom: -1px; padding: .5rem 1.25rem; white-space: nowrap;
-      transition: color .15s, border-color .15s;
-    }
-    .tab-btn:hover { color: #e6edf3; }
-    .tab-btn.active { border-bottom-color: #58a6ff; color: #58a6ff; }
-    .tab-content { display: none; width: 100%; max-width: 960px; }
-    .tab-content.active { display: block; }
-
-    /* ── Shared card ───────────────────────────────────────────── */
-    .card {
-      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-      padding: 2rem; width: 100%; max-width: 600px;
-    }
-    h1 { font-size: 1.25rem; margin-bottom: .25rem; color: #58a6ff; }
-    .subtitle { font-size: .85rem; color: #8b949e; margin-bottom: 2rem; }
-    .section-title {
-      font-size: .75rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: .08em; color: #8b949e; margin: 1.5rem 0 .75rem;
-    }
-    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 1rem; }
-    label  { font-size: .85rem; color: #c9d1d9; }
-    input[type="text"], input[type="number"], input[type="password"] {
-      background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
-      color: #e6edf3; font-size: .9rem; padding: .5rem .75rem; width: 100%;
-      transition: border-color .15s;
-    }
-    input:focus { outline: none; border-color: #58a6ff; }
-    .hint { font-size: .75rem; color: #8b949e; }
-    .restart-badge {
-      display: inline-flex; align-items: center; gap: .2rem;
-      font-size: .68rem; font-weight: 600; color: #d29922;
-      background: rgba(210,153,34,.12); border: 1px solid rgba(210,153,34,.3);
-      border-radius: 4px; padding: 0 .35rem; margin-left: .4rem;
-      vertical-align: middle; cursor: default; user-select: none;
-    }
-    button.primary {
-      margin-top: 1.5rem; width: 100%; background: #238636; border: none;
-      border-radius: 6px; color: #fff; cursor: pointer; font-size: .95rem;
-      padding: .65rem; transition: background .15s;
-    }
-    button.primary:hover { background: #2ea043; }
-    .save-status { margin-top: .75rem; font-size: .85rem; text-align: center; min-height: 1.2em; }
-    .ok  { color: #3fb950; }
-    .err { color: #f85149; }
-
-    /* ── Shared toolbar / action buttons ──────────────────────── */
-    .toolbar {
-      align-items: center; background: #161b22; border: 1px solid #30363d;
-      border-radius: 12px 12px 0 0; border-bottom: none;
-      display: flex; flex-wrap: wrap; gap: .75rem; padding: .75rem 1rem;
-    }
-    .filter-group { align-items: center; display: flex; flex-wrap: wrap; gap: .4rem; }
-    .filter-label {
-      color: #8b949e; font-size: .75rem; font-weight: 600;
-      letter-spacing: .06em; margin-right: .2rem; text-transform: uppercase;
-    }
-    .action-btn {
-      background: #21262d; border: 1px solid #30363d; border-radius: 6px;
-      color: #c9d1d9; cursor: pointer; font-size: .8rem; padding: 4px 12px;
-      transition: background .15s, color .15s;
-    }
-    .action-btn:hover  { background: #30363d; color: #e6edf3; }
-    .action-btn.active { background: #1f6feb; border-color: #388bfd; color: #fff; }
-    .action-btn.danger:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
-
-    /* ── Detection tab ─────────────────────────────────────────── */
-    .topic-options { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1rem; }
-
-    .topic-option {
-      background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
-      cursor: pointer; padding: .75rem 1rem; transition: border-color .15s;
-    }
-    .topic-option:has(input:checked),
-    .topic-option.selected { border-color: #58a6ff; }
-
-    .topic-option-header { align-items: center; display: flex; gap: .6rem; }
-    .topic-option input[type="radio"] { accent-color: #58a6ff; cursor: pointer; flex-shrink: 0; }
-    .topic-option-name { color: #c9d1d9; font-family: monospace; font-size: .88rem; font-weight: 600; }
-    .topic-option-desc { color: #8b949e; font-size: .78rem; margin-top: .35rem; padding-left: 1.4rem; }
-    .topic-custom-input {
-      margin-top: .5rem; padding-left: 1.4rem;
-    }
-    .topic-custom-input input {
-      font-family: monospace;
-    }
-
-    .filters-header {
-      align-items: center; display: flex; justify-content: space-between; margin-bottom: .6rem;
-    }
-    .filters-header .section-title { margin: 0; }
-    .filters-header-actions { display: flex; gap: .4rem; }
-
-    #filters-list { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
-
-    .filter-row {
-      align-items: center; background: #0d1117; border: 1px solid #30363d;
-      border-radius: 6px; display: flex; gap: .4rem; padding: .4rem .5rem;
-    }
-    .filter-row input {
-      background: transparent; border: none; border-radius: 4px; color: #e6edf3;
-      font-family: monospace; font-size: .83rem; padding: 3px 6px;
-      transition: background .15s;
-    }
-    .filter-row input:focus { background: #161b22; border: none; outline: 1px solid #58a6ff; }
-    .filter-prop  { flex: 2; min-width: 0; }
-    .filter-cmp   {
-      background: #21262d; border: 1px solid #30363d; border-radius: 4px;
-      color: #c9d1d9; font-size: .8rem; flex-shrink: 0; padding: 3px 6px;
-    }
-    .filter-cmp:focus { outline: 1px solid #58a6ff; }
-    .filter-val   { flex: 2; min-width: 0; }
-    .filter-remove {
-      background: none; border: none; color: #484f58; cursor: pointer;
-      flex-shrink: 0; font-size: .9rem; line-height: 1; padding: 2px 4px;
-      transition: color .15s;
-    }
-    .filter-remove:hover { color: #f85149; }
-    .filters-empty { color: #484f58; font-size: .82rem; padding: .5rem 0; }
-
-    /* ── Logs tab ──────────────────────────────────────────────── */
-    .logs-panel {
-      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-      display: flex; flex-direction: column; height: calc(100vh - 10rem); overflow: hidden;
-    }
-    .level-badge {
-      border-radius: 4px; cursor: pointer; font-size: .72rem; font-weight: 700;
-      letter-spacing: .04em; opacity: .4; padding: 2px 7px; user-select: none;
-      transition: opacity .15s;
-    }
-    .level-badge.active { opacity: 1; }
-    .level-badge.DEBUG    { background: #21262d; color: #8b949e;  border: 1px solid #30363d; }
-    .level-badge.INFO     { background: #0d419d; color: #58a6ff;  border: 1px solid #1f6feb; }
-    .level-badge.WARNING  { background: #4d2d00; color: #e3b341;  border: 1px solid #9e6a03; }
-    .level-badge.ERROR    { background: #490202; color: #f85149;  border: 1px solid #b91c1c; }
-    .level-badge.CRITICAL { background: #490202; color: #f85149;  border: 1px solid #b91c1c; }
-    #source-filter {
-      background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
-      color: #e6edf3; font-size: .82rem; padding: 3px 8px;
-    }
-    .log-actions { display: flex; gap: .4rem; margin-left: auto; }
-    #log-container {
-      flex: 1; font-family: "Courier New", monospace; font-size: .78rem;
-      line-height: 1.55; overflow-y: auto; padding: .5rem 0;
-    }
-    .log-entry {
-      border-left: 2px solid transparent; display: flex; gap: .6rem;
-      padding: 1px 1rem; white-space: pre-wrap; word-break: break-word;
-    }
-    .log-entry:hover    { background: #1c2128; }
-    .log-entry.DEBUG    { border-left-color: #30363d; }
-    .log-entry.INFO     { border-left-color: #1f6feb; }
-    .log-entry.WARNING  { border-left-color: #9e6a03; }
-    .log-entry.ERROR    { border-left-color: #b91c1c; }
-    .log-entry.CRITICAL { border-left-color: #b91c1c; }
-    .log-ts  { color: #484f58; flex-shrink: 0; }
-    .log-lvl { flex-shrink: 0; font-weight: 700; width: 4.5rem; }
-    .log-src { color: #8b949e; flex-shrink: 0; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; }
-    .log-msg { color: #e6edf3; flex: 1; }
-    .log-entry.DEBUG    .log-lvl { color: #8b949e; }
-    .log-entry.INFO     .log-lvl { color: #58a6ff; }
-    .log-entry.WARNING  .log-lvl { color: #e3b341; }
-    .log-entry.ERROR    .log-lvl { color: #f85149; }
-    .log-entry.CRITICAL .log-lvl { color: #f85149; }
-    .log-status {
-      border-top: 1px solid #30363d; color: #484f58;
-      font-size: .75rem; padding: .4rem 1rem; text-align: center;
-    }
-
-    /* ── Snapshots tab ─────────────────────────────────────────── */
-    .snapshots-panel {
-      background: #161b22; border: 1px solid #30363d;
-      border-radius: 12px; min-height: 300px;
-    }
-    .snapshots-toolbar { border-radius: 12px 12px 0 0; }
-    #gesture-filter, #snap-cam-filter {
-      background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
-      color: #e6edf3; font-size: .82rem; padding: 3px 8px;
-    }
-    .snap-actions { display: flex; gap: .4rem; margin-left: auto; }
-    #snapshots-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 1rem; padding: 1rem;
-    }
-    .snap-empty {
-      color: #484f58; font-size: .9rem; grid-column: 1/-1;
-      padding: 3rem; text-align: center;
-    }
-    .snap-card {
-      background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
-      cursor: pointer; overflow: hidden; position: relative;
-      transition: border-color .15s, transform .15s;
-    }
-    .snap-card:hover { border-color: #58a6ff; transform: translateY(-2px); }
-    .snap-card img { display: block; height: 130px; object-fit: cover; width: 100%; }
-    .snap-info { padding: .5rem .6rem .4rem; }
-    .snap-camera { color: #8b949e; font-size: .72rem; margin-bottom: .25rem; }
-    .snap-time   { color: #484f58; font-size: .68rem; margin-bottom: .35rem; }
-    .snap-gesture-row { align-items: center; display: flex; flex-wrap: wrap; gap: .3rem; }
-    .gesture-tag { border-radius: 4px; font-size: .68rem; font-weight: 600; padding: 1px 6px; }
-    .gesture-tag.detected { background: #0d419d; border: 1px solid #1f6feb; color: #58a6ff; }
-    .gesture-tag.none     { background: #21262d; border: 1px solid #30363d; color: #484f58; }
-    .snap-card-actions {
-      bottom: 0; display: flex; gap: .3rem; justify-content: flex-end;
-      opacity: 0; padding: .3rem .4rem; position: absolute; right: 0;
-      transition: opacity .15s;
-    }
-    .snap-card:hover .snap-card-actions { opacity: 1; }
-    .snap-icon-btn {
-      background: rgba(13,17,23,.85); border: 1px solid #30363d; border-radius: 5px;
-      color: #c9d1d9; cursor: pointer; font-size: .75rem; padding: 3px 7px;
-      transition: background .15s;
-    }
-    .snap-icon-btn:hover     { background: #30363d; color: #e6edf3; }
-    .snap-icon-btn.del:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
-
-    /* ── Bulk action bar ───────────────────────────────────────── */
-    .bulk-bar {
-      align-items: center; background: #0d2044; border-top: 1px solid #1f6feb;
-      display: none; flex-wrap: wrap; gap: .6rem; padding: .55rem 1rem;
-    }
-    .bulk-bar.visible { display: flex; }
-    .bulk-count { color: #58a6ff; font-size: .82rem; font-weight: 600; margin-right: .25rem; }
-    .bulk-btn {
-      background: #21262d; border: 1px solid #30363d; border-radius: 6px;
-      color: #c9d1d9; cursor: pointer; font-size: .8rem; padding: 3px 12px;
-      transition: background .15s;
-    }
-    .bulk-btn:hover       { background: #30363d; color: #e6edf3; }
-    .bulk-btn.danger:hover{ background: #b91c1c; border-color: #f85149; color: #fff; }
-    .bulk-btn.deselect    { margin-left: auto; color: #8b949e; }
-
-    /* ── Card checkbox ─────────────────────────────────────────── */
-    .snap-check-wrap {
-      position: absolute; top: .4rem; right: .4rem; z-index: 3;
-    }
-    .snap-check {
-      accent-color: #58a6ff; cursor: pointer; height: 1rem; width: 1rem;
-      opacity: 0; transition: opacity .15s;
-    }
-    /* Show on hover, when checked, or when selection mode is active */
-    .snap-card:hover .snap-check,
-    .snap-check:checked { opacity: 1; }
-    .selection-active .snap-check { opacity: 1; }
-
-    .snap-card.snap-selected {
-      border-color: #58a6ff;
-      background: #0d1e3a;
-    }
-    @keyframes snap-glow {
-      0%   { border-color: #58a6ff; box-shadow: 0 0 8px 3px rgba(88,166,255,.55); }
-      100% { border-color: #30363d; box-shadow: none; }
-    }
-    .snap-card.snap-new { animation: snap-glow 2s ease-out forwards; }
-
-    /* ── Modal ─────────────────────────────────────────────────── */
-    .modal {
-      align-items: center; bottom: 0; display: flex; justify-content: center;
-      left: 0; position: fixed; right: 0; top: 0; z-index: 100;
-    }
-    .modal.hidden { display: none; }
-    .modal-backdrop {
-      background: rgba(0,0,0,.75); bottom: 0; left: 0;
-      position: absolute; right: 0; top: 0;
-    }
-    .modal-content {
-      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-      display: flex; flex-direction: column; max-height: 90vh; max-width: 860px;
-      overflow: hidden; position: relative; width: 95vw; z-index: 1;
-    }
-    .modal-header {
-      align-items: center; border-bottom: 1px solid #30363d;
-      display: flex; justify-content: space-between; padding: .75rem 1rem;
-    }
-    .modal-title { color: #e6edf3; font-size: .95rem; font-weight: 600; }
-    .modal-close {
-      background: none; border: none; color: #8b949e; cursor: pointer;
-      font-size: 1.3rem; line-height: 1; padding: 0 .25rem; transition: color .15s;
-    }
-    .modal-close:hover { color: #e6edf3; }
-    .modal-body {
-      display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; padding: 1rem;
-    }
-    @media (min-width: 600px) { .modal-body { flex-direction: row; } }
-    .modal-img-wrap { flex: 1.5; position: relative; }
-    .modal-img-wrap img {
-      border-radius: 6px; display: block; max-height: 60vh; object-fit: contain; width: 100%;
-    }
-    .modal-meta { display: flex; flex-direction: column; flex: 1; gap: .6rem; }
-    .meta-row  { display: flex; flex-direction: column; gap: 2px; }
-    .meta-label { color: #8b949e; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-    .meta-val   { color: #e6edf3; font-size: .85rem; }
-    .modal-footer {
-      border-top: 1px solid #30363d; display: flex;
-      gap: .5rem; justify-content: flex-end; padding: .75rem 1rem;
-    }
-    .modal-btn {
-      background: #21262d; border: 1px solid #30363d; border-radius: 6px;
-      color: #c9d1d9; cursor: pointer; font-size: .85rem; padding: 5px 14px;
-      transition: background .15s;
-    }
-    .modal-btn:hover { background: #30363d; color: #e6edf3; }
-    .modal-btn.danger:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
-
-    /* ── Snapshot modal nav arrows ─────────────────────────────── */
-    .modal-nav {
-      align-items: center; background: rgba(13,17,23,.75); border: 1px solid #30363d;
-      border-radius: 50%; color: #c9d1d9; cursor: pointer; display: flex;
-      height: 2.25rem; justify-content: center;
-      position: absolute; top: 50%; transform: translateY(-50%);
-      transition: background .15s, color .15s; width: 2.25rem; z-index: 2;
-    }
-    .modal-nav:hover { background: #30363d; color: #fff; }
-    .modal-nav:disabled { cursor: default; opacity: .2; pointer-events: none; }
-    .modal-nav.prev { left: .4rem; }
-    .modal-nav.next { right: .4rem; }
-
-    /* ── Confirm modal ─────────────────────────────────────────── */
-    .confirm-body {
-      color: #c9d1d9; font-size: .9rem; line-height: 1.55;
-      padding: 1.25rem 1.25rem .5rem;
-    }
-    .confirm-footer {
-      border-top: 1px solid #30363d; display: flex;
-      gap: .5rem; justify-content: flex-end; padding: .75rem 1rem;
-    }
-
-    /* ── Power button ──────────────────────────────────────────── */
-    .power-wrap { position: fixed; right: 1rem; top: 1rem; z-index: 200; }
-    .power-btn {
-      align-items: center; background: #21262d; border: 1px solid #30363d;
-      border-radius: 8px; color: #8b949e; cursor: pointer; display: flex;
-      height: 2rem; justify-content: center; transition: background .15s, color .15s;
-      width: 2rem;
-    }
-    .power-btn:hover { background: #30363d; color: #e6edf3; }
-    .power-menu {
-      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
-      display: none; min-width: 130px; overflow: hidden;
-      position: absolute; right: 0; top: calc(100% + 6px);
-    }
-    .power-menu.open { display: block; }
-    .power-menu-item {
-      align-items: center; background: none; border: none; color: #c9d1d9;
-      cursor: pointer; display: flex; font-size: .85rem; gap: .5rem; padding: .55rem .85rem;
-      text-align: left; transition: background .15s; width: 100%;
-    }
-    .power-menu-item:hover { background: #21262d; color: #e6edf3; }
-    .power-menu-item.danger:hover { background: #490202; color: #f85149; }
-
-    /* ── Debug tab ─────────────────────────────────────────────── */
-    .debug-panel { display: flex; flex-direction: column; gap: 1rem; width: 100%; }
-    .debug-webcam-card {
-      background: #161b22; border: 1px solid #30363d; border-radius: 12px; overflow: hidden;
-    }
-    .debug-webcam-header {
-      align-items: center; border-bottom: 1px solid #30363d;
-      display: flex; gap: .75rem; justify-content: space-between; padding: .75rem 1rem;
-    }
-    .debug-webcam-title { color: #e6edf3; font-size: .9rem; font-weight: 600; }
-    .debug-webcam-body { background: #000; position: relative; }
-    #debug-webcam { display: block; max-height: 55vh; object-fit: contain; width: 100%; }
-    .debug-webcam-placeholder {
-      align-items: center; color: #484f58; display: flex; flex-direction: column;
-      font-size: .85rem; gap: .6rem; height: 260px; justify-content: center;
-    }
-    .debug-webcam-status {
-      border-top: 1px solid #30363d; color: #484f58;
-      font-size: .75rem; min-height: 1.8rem; padding: .35rem 1rem; text-align: center;
-    }
-    .debug-params-card {
-      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-    }
-    .debug-param-grid {
-      display: grid; gap: .9rem 1.5rem;
-      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin-top: .75rem;
-    }
-    .debug-param { display: flex; flex-direction: column; gap: 4px; }
-    .debug-param-label {
-      color: #8b949e; font-size: .72rem; font-weight: 600;
-      letter-spacing: .06em; text-transform: uppercase;
-    }
-    .debug-param-row { align-items: center; display: flex; gap: .5rem; }
-    .debug-param-row input[type="range"] { accent-color: #58a6ff; flex: 1; min-width: 0; }
-    .debug-param-row input[type="number"] {
-      background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
-      color: #e6edf3; font-size: .85rem; padding: .2rem .45rem; width: 5.5rem;
-    }
-    .debug-param-row input[type="number"]:focus { border-color: #58a6ff; outline: none; }
-    #debug-cam-select {
-      background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
-      color: #e6edf3; font-size: .8rem; max-width: 180px; padding: 3px 8px;
-    }
-    .debug-analysis-card {
-      background: #161b22; border: 1px solid #30363d; border-radius: 12px; overflow: hidden;
-    }
-    .debug-analysis-header {
-      align-items: center; border-bottom: 1px solid #30363d;
-      display: flex; gap: .75rem; justify-content: space-between; padding: .6rem 1rem;
-    }
-    .debug-analysis-title { color: #e6edf3; font-size: .9rem; font-weight: 600; }
-    #debug-interval-select {
-      background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
-      color: #e6edf3; font-size: .8rem; padding: 2px 6px;
-    }
-    .debug-analysis-body { padding: .75rem 1rem; min-height: 4rem; }
-    .debug-analysis-idle { color: #484f58; font-size: .85rem; padding: .5rem 0; }
-    .debug-hand {
-      border: 1px solid #30363d; border-radius: 8px; margin-bottom: .75rem;
-      overflow: hidden;
-    }
-    .debug-hand:last-child { margin-bottom: 0; }
-    .debug-hand-header {
-      align-items: baseline; background: #0d1117; display: flex;
-      gap: .6rem; padding: .5rem .75rem; flex-wrap: wrap;
-    }
-    .debug-hand-gesture { color: #58a6ff; font-size: 1rem; font-weight: 700; }
-    .debug-hand-score   { color: #3fb950; font-size: .88rem; font-weight: 600; }
-    .debug-hand-meta    { color: #8b949e; font-size: .78rem; margin-left: auto; }
-    .debug-hand-body    { display: flex; flex-wrap: wrap; gap: 0; }
-    .debug-hand-section { flex: 1; min-width: 160px; padding: .6rem .75rem; }
-    .debug-hand-section + .debug-hand-section { border-left: 1px solid #21262d; }
-    .debug-section-label {
-      color: #484f58; font-size: .68rem; font-weight: 600; letter-spacing: .08em;
-      margin-bottom: .4rem; text-transform: uppercase;
-    }
-    .debug-bar-row {
-      align-items: center; display: flex; font-size: .78rem; gap: .5rem; margin-bottom: .3rem;
-    }
-    .debug-bar-name  { color: #8b949e; min-width: 4.5rem; }
-    .debug-bar-track {
-      background: #21262d; border-radius: 3px; flex: 1; height: 6px; overflow: hidden;
-    }
-    .debug-bar-fill  { background: #58a6ff; border-radius: 3px; height: 100%; transition: width .2s; }
-    .debug-bar-pct   { color: #e6edf3; min-width: 2.5rem; text-align: right; }
-    .debug-gesture-row {
-      align-items: center; display: flex; font-size: .78rem; gap: .4rem; margin-bottom: .25rem;
-    }
-    .debug-gesture-row.winner .debug-gesture-name { color: #58a6ff; font-weight: 600; }
-    .debug-gesture-row.winner .debug-gesture-pct  { color: #3fb950; font-weight: 600; }
-    .debug-gesture-name { color: #8b949e; flex: 1; }
-    .debug-gesture-pct  { color: #6e7681; min-width: 2.5rem; text-align: right; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
 
@@ -541,7 +73,6 @@
         </div>
 
         <p class="section-title">Frigate API — Snapshot source</p>
-
         <div class="topic-options">
           <label class="topic-option">
             <div class="topic-option-header">
@@ -555,7 +86,6 @@
               frame Frigate selected at the time of the event.
             </div>
           </label>
-
           <label class="topic-option">
             <div class="topic-option-header">
               <input type="radio" name="frigate_snapshot_mode" value="latest_frame"
@@ -635,9 +165,7 @@
 
       <form id="detection-form">
         <p class="section-title">MQTT Topic</p>
-
         <div class="topic-options" id="topic-options">
-
           <label class="topic-option">
             <div class="topic-option-header">
               <input type="radio" name="mqtt_topic_choice" value="frigate/events" />
@@ -649,7 +177,6 @@
               filter on fields like <code>after.label</code> or <code>after.top_score</code>.
             </div>
           </label>
-
           <label class="topic-option">
             <div class="topic-option-header">
               <input type="radio" name="mqtt_topic_choice" value="frigate/tracked_object_update" />
@@ -660,7 +187,6 @@
               Payload is flat — filter on fields like <code>type</code>, <code>name</code>, or <code>score</code>.
             </div>
           </label>
-
           <label class="topic-option" id="custom-topic-option">
             <div class="topic-option-header">
               <input type="radio" name="mqtt_topic_choice" value="__custom__" />
@@ -671,10 +197,8 @@
               <input type="text" id="custom-topic-input" placeholder="e.g. frigate/+/events" />
             </div>
           </label>
-
         </div>
 
-        <!-- Filters -->
         <div class="filters-header">
           <p class="section-title">Filters <span style="color:#484f58;font-weight:400;text-transform:none;letter-spacing:0">(all must match)</span></p>
           <div class="filters-header-actions">
@@ -682,7 +206,6 @@
             <button type="button" class="action-btn" id="btn-add-filter">+ Add filter</button>
           </div>
         </div>
-
         <div id="filters-list"></div>
 
         <button type="submit" class="primary">Save detection configuration</button>
@@ -708,7 +231,6 @@
           <button class="action-btn danger" id="btn-clear-snaps">Clear all</button>
         </div>
       </div>
-      <!-- Bulk action bar (shown when ≥1 card is selected) -->
       <div class="bulk-bar" id="bulk-bar">
         <span class="bulk-count" id="bulk-count">0 selected</span>
         <button class="bulk-btn" id="bulk-delete">Delete selected</button>
@@ -727,7 +249,6 @@
 
       <form id="mediapipe-form">
         <p class="section-title">Recognition Backend <span class="restart-badge" title="Changing this requires a restart">&#x21BA; restart</span></p>
-
         <div class="topic-options" style="margin-bottom:1rem">
           <label class="topic-option">
             <div class="topic-option-header">
@@ -772,22 +293,17 @@
           Disabled gestures return <code>unknown</code> instead of triggering a detection.
           Useful to suppress gestures that are frequently confused in your environment.
         </p>
-
         <div id="gesture-checkboxes" style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem .75rem;margin-bottom:1rem"></div>
 
         <p class="section-title" style="margin-top:1.5rem">Model Settings</p>
-
         <div class="field">
           <label for="mediapipe_min_detection_confidence">Min detection confidence <span class="restart-badge" title="Changing this requires a restart">&#x21BA; restart</span></label>
           <input id="mediapipe_min_detection_confidence" name="mediapipe_min_detection_confidence"
             type="number" step="0.05" min="0.05" max="1"
             value="{{ config.mediapipe_min_detection_confidence | default(0.5) }}" />
-          <span class="hint">
-            Minimum MediaPipe confidence to accept a hand detection (0.05 – 1.0).
-            Raise this to reduce false positives in low-light conditions.
-          </span>
+          <span class="hint">Minimum MediaPipe confidence to accept a hand detection (0.05 – 1.0).
+            Raise this to reduce false positives in low-light conditions.</span>
         </div>
-
         <div class="field">
           <label for="mediapipe_max_num_hands">Max hands <span class="restart-badge" title="Changing this requires a restart">&#x21BA; restart</span></label>
           <input id="mediapipe_max_num_hands" name="mediapipe_max_num_hands"
@@ -801,29 +317,23 @@
             <input id="landmark_sigmoid_k" name="landmark_sigmoid_k"
               type="number" step="0.5" min="0.5" max="20"
               value="{{ config.landmark_sigmoid_k | default(10.0) }}" />
-            <span class="hint">
-              Controls how sharply a finger is classified as extended vs curled (0.5 – 20).
-              Higher = more binary, lower = more gradual scoring.
-            </span>
+            <span class="hint">Controls how sharply a finger is classified as extended vs curled (0.5 – 20).
+              Higher = more binary, lower = more gradual scoring.</span>
           </div>
           <div class="field">
             <label for="landmark_score_threshold">Score threshold</label>
             <input id="landmark_score_threshold" name="landmark_score_threshold"
               type="number" step="0.05" min="0.5" max="1"
               value="{{ config.landmark_score_threshold | default(0.7) }}" />
-            <span class="hint">
-              Minimum gesture match confidence to report a detection instead of <code>unknown</code> (0.5 – 1.0).
-            </span>
+            <span class="hint">Minimum gesture match confidence to report a detection instead of <code>unknown</code> (0.5 – 1.0).</span>
           </div>
           <div class="field">
             <label for="landmark_thumb_angle">Thumb opening angle (°)</label>
             <input id="landmark_thumb_angle" name="landmark_thumb_angle"
               type="number" step="5" min="-90" max="90"
               value="{{ config.landmark_thumb_angle | default(0.0) }}" />
-            <span class="hint">
-              Direction of thumb extension in the rotated frame (-90° – 90°).
-              0° = purely horizontal. Increase toward 30–45° if the thumb is consistently underscored.
-            </span>
+            <span class="hint">Direction of thumb extension in the rotated frame (-90° – 90°).
+              0° = purely horizontal. Increase toward 30–45° if the thumb is consistently underscored.</span>
           </div>
         </div>
 
@@ -835,9 +345,7 @@
                 {{ 'checked' if (config.mediapipe_model_complexity | default(1)) | int == 0 else '' }} />
               <span class="topic-option-name">0 — Lite</span>
             </div>
-            <div class="topic-option-desc">
-              Faster inference, lower memory usage. Recommended for slower hardware (e.g. Raspberry Pi).
-            </div>
+            <div class="topic-option-desc">Faster inference, lower memory usage. Recommended for slower hardware (e.g. Raspberry Pi).</div>
           </label>
           <label class="topic-option">
             <div class="topic-option-header">
@@ -845,9 +353,7 @@
                 {{ 'checked' if (config.mediapipe_model_complexity | default(1)) | int != 0 else '' }} />
               <span class="topic-option-name">1 — Full</span>
             </div>
-            <div class="topic-option-desc">
-              More accurate landmark detection. Better performance in low-light or at distance.
-            </div>
+            <div class="topic-option-desc">More accurate landmark detection. Better performance in low-light or at distance.</div>
           </label>
         </div>
 
@@ -940,7 +446,6 @@
         <p class="subtitle" style="margin-bottom:1rem">Landmarks backend tuning — changes apply immediately on save.</p>
 
         <div class="debug-param-grid">
-
           <div class="debug-param">
             <span class="debug-param-label">Sigmoid Sharpness (k)</span>
             <div class="debug-param-row">
@@ -951,7 +456,6 @@
             </div>
             <span class="hint">How sharply fingers are classified as extended vs curled. Higher = more binary.</span>
           </div>
-
           <div class="debug-param">
             <span class="debug-param-label">Score Threshold</span>
             <div class="debug-param-row">
@@ -962,7 +466,6 @@
             </div>
             <span class="hint">Minimum match confidence to report a gesture instead of <code>unknown</code>.</span>
           </div>
-
           <div class="debug-param">
             <span class="debug-param-label">Thumb Opening Angle (°)</span>
             <div class="debug-param-row">
@@ -973,7 +476,6 @@
             </div>
             <span class="hint">Thumb extension direction in the rotated hand frame (0° = horizontal).</span>
           </div>
-
           <div class="debug-param">
             <span class="debug-param-label">Min Detection Confidence</span>
             <div class="debug-param-row">
@@ -984,7 +486,6 @@
             </div>
             <span class="hint">MediaPipe hand detection threshold. Raise to reduce false positives.</span>
           </div>
-
         </div>
 
         <button class="primary" id="btn-debug-save-params">Apply Parameters</button>
@@ -1056,1027 +557,39 @@
     </div>
   </div>
 
+  <!-- ── Server-injected constants (must load before external scripts) ── -->
   <script>
-    // ── API URLs ────────────────────────────────────────────────────
-    const URL_CONFIG       = {{ url_for('update_config')   | tojson }};
-    const URL_LOGS         = {{ url_for('get_logs')        | tojson }};
-    const URL_LOGS_CLEAR   = {{ url_for('clear_logs')      | tojson }};
-    const URL_LOGS_STREAM  = {{ url_for('stream_logs')     | tojson }};
-    const URL_SNAPSHOTS      = {{ url_for('get_snapshots')         | tojson }};
-    const URL_SNAPS_CLEAR    = {{ url_for('clear_snapshots')       | tojson }};
-    const URL_SNAPS_DOWNLOAD = {{ url_for('download_snapshots_zip')| tojson }};
-    const URL_RESTART       = {{ url_for('restart')       | tojson }};
-    const URL_SHUTDOWN      = {{ url_for('shutdown')      | tojson }};
-    const URL_DEBUG_ANALYZE = {{ url_for('debug_analyze') | tojson }};
+    const URL_CONFIG              = {{ url_for('update_config')          | tojson }};
+    const URL_LOGS                = {{ url_for('get_logs')               | tojson }};
+    const URL_LOGS_CLEAR          = {{ url_for('clear_logs')             | tojson }};
+    const URL_LOGS_STREAM         = {{ url_for('stream_logs')            | tojson }};
+    const URL_SNAPSHOTS           = {{ url_for('get_snapshots')          | tojson }};
+    const URL_SNAPS_CLEAR         = {{ url_for('clear_snapshots')        | tojson }};
+    const URL_SNAPS_DOWNLOAD      = {{ url_for('download_snapshots_zip') | tojson }};
+    const URL_RESTART             = {{ url_for('restart')                | tojson }};
+    const URL_SHUTDOWN            = {{ url_for('shutdown')               | tojson }};
+    const URL_DEBUG_ANALYZE       = {{ url_for('debug_analyze')          | tojson }};
+    const URL_GESTURE_MODEL_STATUS   = {{ url_for('gesture_model_status')   | tojson }};
+    const URL_GESTURE_MODEL_DOWNLOAD = {{ url_for('download_gesture_model') | tojson }};
 
-    function snapImageUrl(id)  { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}/image`); }
-    function snapDeleteUrl(id) { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}`); }
-
-    const GESTURE_EMOJI = {
-      fist:"✊", thumbs_up:"👍", pointing:"☝️", peace:"✌️", open_palm:"🖐️",
-      four_fingers:"🤚", rock_on:"🤘", call_me:"🤙", pinky:"🤙", three_fingers:"🤟", unknown:"🤔",
-    };
-
-    const COMPARATORS = ["==","!=",">","<",">=","<=","contains","not contains"];
-
-    // Default filters per predefined topic
-    const TOPIC_DEFAULTS = {
-      "frigate/events": [
-        { property:"type",           comparator:"==", value:"update"  },
-        { property:"after.label",    comparator:"==", value:"person"  },
-        { property:"after.top_score",comparator:">",  value:"0.7"     },
-      ],
-      "frigate/tracked_object_update": [
-        { property:"type",  comparator:"==", value:"face"    },
-        { property:"name",  comparator:"!=", value:"unknown" },
-        { property:"score", comparator:">",  value:"0.7"     },
-      ],
-    };
-
-    // Initial config values from server
     const INIT_TOPIC   = {{ (config.mqtt_topic   | default('frigate/events')) | tojson }};
     const INIT_FILTERS = {{ (config.topic_filters | default([])) | tojson }};
-
-    // ── Tab switching ───────────────────────────────────────────────
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
-        if (btn.dataset.tab === "snapshots") loadSnapshots();
-      });
-    });
-
-    // ══ Connections form ════════════════════════════════════════════
-    document.getElementById("config-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const status = document.getElementById("config-status");
-      const data = Object.fromEntries(new FormData(e.target).entries());
-      // Radio groups not included in FormData when nothing is checked — ensure key exists
-      const modeRadio = e.target.querySelector("input[name='frigate_snapshot_mode']:checked");
-      if (modeRadio) data["frigate_snapshot_mode"] = modeRadio.value;
-      const cropBox = e.target.querySelector("input[name='frigate_snapshot_crop']");
-      if (cropBox) data["frigate_snapshot_crop"] = cropBox.checked ? 1 : 0;
-      ["mqtt_port","web_ui_port","max_snapshots","frigate_snapshot_quality","frigate_snapshot_height"].forEach(k => { if (k in data) data[k] = parseInt(data[k],10); });
-      status.textContent = "Saving…"; status.className = "save-status";
-      try {
-        const res  = await fetch(URL_CONFIG, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data) });
-        const json = await res.json();
-        if (res.ok) { status.textContent = "Saved."; status.className = "save-status ok"; }
-        else        { status.textContent = "Error: "+(json.error||res.statusText); status.className = "save-status err"; }
-      } catch(err) { status.textContent = "Network error: "+err.message; status.className = "save-status err"; }
-    });
-
-    // ══ Detection form ══════════════════════════════════════════════
-
-    // Topic radio logic
-    const PREDEFINED = ["frigate/events","frigate/tracked_object_update"];
-    let currentTopic = INIT_TOPIC;
-
-    function initTopicRadios() {
-      const isCustom = !PREDEFINED.includes(currentTopic);
-      document.querySelectorAll("input[name='mqtt_topic_choice']").forEach(r => {
-        r.checked = isCustom ? r.value === "__custom__" : r.value === currentTopic;
-      });
-      document.getElementById("custom-topic-wrap").style.display = isCustom ? "block" : "none";
-      if (isCustom) document.getElementById("custom-topic-input").value = currentTopic;
-      updateTopicOptionStyles();
-    }
-
-    function updateTopicOptionStyles() {
-      document.querySelectorAll(".topic-option").forEach(opt => {
-        opt.classList.toggle("selected", opt.querySelector("input[type=radio]").checked);
-      });
-    }
-
-    document.querySelectorAll("input[name='mqtt_topic_choice']").forEach(r => {
-      r.addEventListener("change", () => {
-        const isCustom = r.value === "__custom__";
-        document.getElementById("custom-topic-wrap").style.display = isCustom ? "block" : "none";
-        if (!isCustom) {
-          currentTopic = r.value;
-          renderDefaultFiltersForTopic(r.value);
-        }
-        updateTopicOptionStyles();
-      });
-    });
-
-    function getSelectedTopic() {
-      const checked = document.querySelector("input[name='mqtt_topic_choice']:checked");
-      if (!checked) return "frigate/events";
-      if (checked.value === "__custom__") return document.getElementById("custom-topic-input").value.trim();
-      return checked.value;
-    }
-
-    function renderDefaultFiltersForTopic(topic) {
-      const defaults = TOPIC_DEFAULTS[topic] || [];
-      renderFilters(defaults);
-    }
-
-    // Filter rows
-    function renderFilters(filters) {
-      const list = document.getElementById("filters-list");
-      list.innerHTML = "";
-      if (filters.length === 0) {
-        list.innerHTML = '<div class="filters-empty">No filters — all messages will trigger processing.</div>';
-        return;
-      }
-      filters.forEach(f => addFilterRow(f));
-    }
-
-    function addFilterRow(f = { property:"", comparator:"==", value:"" }) {
-      const list = document.getElementById("filters-list");
-      // Remove empty placeholder if present
-      const placeholder = list.querySelector(".filters-empty");
-      if (placeholder) placeholder.remove();
-
-      const row = document.createElement("div");
-      row.className = "filter-row";
-
-      const cmpOptions = COMPARATORS.map(c =>
-        `<option value="${c}"${c === f.comparator ? " selected" : ""}>${c}</option>`
-      ).join("");
-
-      row.innerHTML = `
-        <input class="filter-prop" type="text"  placeholder="property (e.g. after.label)" value="${escHtml(f.property)}" />
-        <select class="filter-cmp">${cmpOptions}</select>
-        <input class="filter-val"  type="text"  placeholder="value" value="${escHtml(f.value)}" />
-        <button type="button" class="filter-remove" title="Remove">✕</button>`;
-
-      row.querySelector(".filter-remove").addEventListener("click", () => {
-        row.remove();
-        if (document.getElementById("filters-list").children.length === 0) {
-          document.getElementById("filters-list").innerHTML =
-            '<div class="filters-empty">No filters — all messages will trigger processing.</div>';
-        }
-      });
-
-      list.appendChild(row);
-    }
-
-    function collectFilters() {
-      return [...document.querySelectorAll("#filters-list .filter-row")].map(row => ({
-        property:   row.querySelector(".filter-prop").value.trim(),
-        comparator: row.querySelector(".filter-cmp").value,
-        value:      row.querySelector(".filter-val").value.trim(),
-      })).filter(f => f.property);
-    }
-
-    document.getElementById("btn-add-filter").addEventListener("click", () => addFilterRow());
-    document.getElementById("btn-reset-filters").addEventListener("click", () => {
-      const topic = getSelectedTopic();
-      renderDefaultFiltersForTopic(topic);
-    });
-
-    // Detection form save
-    document.getElementById("detection-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const status = document.getElementById("detection-status");
-      const payload = {
-        mqtt_topic:    getSelectedTopic(),
-        topic_filters: collectFilters(),
-      };
-      status.textContent = "Saving…"; status.className = "save-status";
-      try {
-        const res  = await fetch(URL_CONFIG, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-        const json = await res.json();
-        if (res.ok) { status.textContent = "Saved. Restart the add-on to apply topic changes."; status.className = "save-status ok"; }
-        else        { status.textContent = "Error: "+(json.error||res.statusText); status.className = "save-status err"; }
-      } catch(err) { status.textContent = "Network error: "+err.message; status.className = "save-status err"; }
-    });
-
-    // Initialise detection tab from server config
-    initTopicRadios();
-    renderFilters(INIT_FILTERS);
-
-    // ══ Snapshots ═══════════════════════════════════════════════════
-    let allSnaps = [], visibleSnaps = [], newSnapIds = new Set(), isFirstLoad = true;
-    let activeGestureFilter = "", activeCamFilter = "";
-    let modalSnap = null, modalSnapIndex = -1;
-    let selectedIds = new Set();
-    const gestureFilter = document.getElementById("gesture-filter");
-    const camFilter     = document.getElementById("snap-cam-filter");
-    const grid          = document.getElementById("snapshots-grid");
-    const bulkBar       = document.getElementById("bulk-bar");
-    const bulkCount     = document.getElementById("bulk-count");
-
-    function updateBulkBar() {
-      const n = selectedIds.size;
-      bulkCount.textContent = n + " selected";
-      bulkBar.classList.toggle("visible", n > 0);
-      grid.classList.toggle("selection-active", n > 0);
-    }
-
-    document.getElementById("bulk-deselect").addEventListener("click", () => {
-      selectedIds.clear();
-      grid.querySelectorAll(".snap-card").forEach(c => {
-        c.classList.remove("snap-selected");
-        c.querySelector(".snap-check").checked = false;
-      });
-      updateBulkBar();
-    });
-
-    document.getElementById("bulk-delete").addEventListener("click", async () => {
-      const ids = [...selectedIds];
-      await Promise.all(ids.map(id => fetch(snapDeleteUrl(id), {method:"DELETE"})));
-      allSnaps = allSnaps.filter(x => !ids.includes(x.id));
-      selectedIds.clear();
-      rebuildSnapFilters(); renderGrid();
-    });
-
-    document.getElementById("bulk-download").addEventListener("click", async () => {
-      const ids = [...selectedIds];
-      const res = await fetch(URL_SNAPS_DOWNLOAD, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ids}),
-      });
-      if (!res.ok) { alert("Download failed"); return; }
-      const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href = url; a.download = "snapshots.zip"; a.click();
-      URL.revokeObjectURL(url);
-    });
-
-    gestureFilter.addEventListener("change", () => { activeGestureFilter = gestureFilter.value; renderGrid(); });
-    camFilter.addEventListener("change",     () => { activeCamFilter     = camFilter.value;     renderGrid(); });
-    document.getElementById("btn-refresh-snaps").addEventListener("click", loadSnapshots);
-    document.getElementById("btn-clear-snaps").addEventListener("click", () => {
-      showConfirm("Clear all snapshots", "Delete all snapshots? This cannot be undone.", async () => {
-        await fetch(URL_SNAPS_CLEAR, { method:"DELETE" });
-        allSnaps = []; selectedIds.clear(); renderGrid();
-      });
-    });
-
-    async function loadSnapshots() {
-      const prevIds = new Set(allSnaps.map(s => s.id));
-      const res = await fetch(URL_SNAPSHOTS);
-      allSnaps  = await res.json();
-      if (isFirstLoad) {
-        newSnapIds = new Set();
-        isFirstLoad = false;
-      } else {
-        newSnapIds = new Set(allSnaps.filter(s => !prevIds.has(s.id)).map(s => s.id));
-      }
-      rebuildSnapFilters(); renderGrid();
-    }
-
-    function rebuildSnapFilters() {
-      const gestures = new Set(), cameras = new Set();
-      allSnaps.forEach(s => {
-        cameras.add(s.camera);
-        if (!s.detections.length) gestures.add("__none__");
-        else s.detections.forEach(d => gestures.add(d.gesture));
-      });
-      const curG = gestureFilter.value;
-      gestureFilter.innerHTML = '<option value="">All</option><option value="__none__">No detection</option>';
-      [...gestures].filter(g => g !== "__none__").sort().forEach(g => {
-        const o = document.createElement("option"); o.value = g;
-        o.textContent = `${GESTURE_EMOJI[g]||"?"} ${g.replace(/_/g," ")}`;
-        gestureFilter.appendChild(o);
-      });
-      gestureFilter.value = curG;
-      const curC = camFilter.value;
-      camFilter.innerHTML = '<option value="">All</option>';
-      [...cameras].sort().forEach(c => {
-        const o = document.createElement("option"); o.value = c; o.textContent = c;
-        camFilter.appendChild(o);
-      });
-      camFilter.value = curC;
-    }
-
-    function matchSnap(s) {
-      if (activeCamFilter && s.camera !== activeCamFilter) return false;
-      if (!activeGestureFilter) return true;
-      if (activeGestureFilter === "__none__") return !s.detections.length;
-      return s.detections.some(d => d.gesture === activeGestureFilter);
-    }
-
-    function gestureTagsHtml(d) {
-      if (!d.length) return `<span class="gesture-tag none">No hands</span>`;
-      return d.map(x=>`<span class="gesture-tag detected">${GESTURE_EMOJI[x.gesture]||"?"} ${x.gesture.replace(/_/g," ")} <span style="opacity:.6;font-weight:400">${Math.round(x.score*100)}%</span></span>`).join("");
-    }
-
-    function renderGrid() {
-      visibleSnaps = allSnaps.filter(matchSnap);
-      if (!visibleSnaps.length) {
-        grid.innerHTML = `<div class="snap-empty">No snapshots${allSnaps.length?" match the current filter":" yet"}.</div>`;
-        return;
-      }
-      grid.innerHTML = "";
-      visibleSnaps.forEach(s => {
-        const card = document.createElement("div"); card.className = "snap-card";
-        if (selectedIds.has(s.id)) card.classList.add("snap-selected");
-        if (newSnapIds.has(s.id))  card.classList.add("snap-new");
-        card.innerHTML = `
-          <div class="snap-check-wrap">
-            <input type="checkbox" class="snap-check" title="Select" ${selectedIds.has(s.id) ? "checked" : ""} />
-          </div>
-          <img src="${snapImageUrl(s.id)}" alt="snapshot" loading="lazy" />
-          <div class="snap-info">
-            <div class="snap-camera">${escHtml(s.camera)}</div>
-            <div class="snap-time">${s.timestamp}</div>
-            <div class="snap-gesture-row">${gestureTagsHtml(s.detections)}</div>
-          </div>
-          <div class="snap-card-actions">
-            <button class="snap-icon-btn dl"    title="Download">↓</button>
-            <button class="snap-icon-btn reclf" title="Reclassify">↺</button>
-            <button class="snap-icon-btn del"   title="Delete">✕</button>
-          </div>`;
-        card.querySelector(".snap-check").addEventListener("change", e => {
-          e.stopPropagation();
-          if (e.target.checked) { selectedIds.add(s.id);    card.classList.add("snap-selected"); }
-          else                  { selectedIds.delete(s.id); card.classList.remove("snap-selected"); }
-          updateBulkBar();
-        });
-        card.addEventListener("click", e => {
-          if (e.target.closest(".snap-card-actions") || e.target.closest(".snap-check-wrap")) return;
-          if (selectedIds.size > 0) {
-            const cb = card.querySelector(".snap-check");
-            cb.checked = !cb.checked;
-            cb.dispatchEvent(new Event("change", {bubbles: false}));
-          } else {
-            openModal(s);
-          }
-        });
-        card.querySelector(".dl").addEventListener("click",  e => { e.stopPropagation(); downloadSnap(s); });
-        card.querySelector(".reclf").addEventListener("click", e => {
-          e.stopPropagation();
-          const btn = e.currentTarget;
-          btn.disabled = true; btn.textContent = "…";
-          reclassifySnap(s.id).then(json => {
-            card.querySelector(".snap-gesture-row").innerHTML = reclassifyTagsHtml(json);
-          }).catch(err => {
-            card.querySelector(".snap-gesture-row").innerHTML =
-              `<span class="gesture-tag none" title="${escHtml(err.message)}">Error</span>`;
-          }).finally(() => { btn.disabled = false; btn.textContent = "↺"; });
-        });
-        card.querySelector(".del").addEventListener("click", e => {
-          e.stopPropagation();
-          showConfirm("Delete snapshot", "Delete this snapshot? This cannot be undone.", async () => {
-            await fetch(snapDeleteUrl(s.id), {method:"DELETE"});
-            allSnaps = allSnaps.filter(x => x.id !== s.id);
-            selectedIds.delete(s.id);
-            rebuildSnapFilters(); renderGrid();
-          });
-        });
-        grid.appendChild(card);
-      });
-      updateBulkBar();
-    }
-
-    function downloadSnap(s) {
-      const a = document.createElement("a"); a.href = snapImageUrl(s.id);
-      a.download = `${s.camera}_${s.timestamp.replace(/[: ]/g,"-")}.jpg`; a.click();
-    }
-
-    // Snapshot modal
-    const modal    = document.getElementById("snapshot-modal");
-    const modalImg = document.getElementById("modal-img");
-
-    function updateNavArrows() {
-      document.getElementById("modal-prev").disabled = modalSnapIndex <= 0;
-      document.getElementById("modal-next").disabled = modalSnapIndex >= visibleSnaps.length - 1;
-    }
-    function openModal(s) {
-      modalSnap      = s;
-      modalSnapIndex = visibleSnaps.findIndex(x => x.id === s.id);
-      document.getElementById("modal-title").textContent = `${s.camera} — ${s.timestamp}`;
-      modalImg.src = snapImageUrl(s.id);
-      const gt = s.detections.length
-        ? s.detections.map(d=>`${GESTURE_EMOJI[d.gesture]||"?"} ${d.gesture.replace(/_/g," ")} (${d.hand}, ${d.score})`).join(", ")
-        : "None";
-      document.getElementById("modal-meta").innerHTML = `
-        <div class="meta-row"><span class="meta-label">Camera</span><span class="meta-val">${escHtml(s.camera)}</span></div>
-        <div class="meta-row"><span class="meta-label">Time</span><span class="meta-val">${s.timestamp}</span></div>
-        <div class="meta-row"><span class="meta-label">Frigate score</span><span class="meta-val">${s.frigate_score}</span></div>
-        <div class="meta-row"><span class="meta-label">Event ID</span><span class="meta-val" style="font-size:.75rem;word-break:break-all">${escHtml(s.event_id)}</span></div>
-        <div class="meta-row"><span class="meta-label">Gesture(s)</span><span class="meta-val">${gt}</span></div>`;
-      updateNavArrows();
-      modal.classList.remove("hidden");
-    }
-    function closeModal() { modal.classList.add("hidden"); modalSnap = null; modalImg.src = ""; }
-    function navigateModal(dir) {
-      const idx = modalSnapIndex + dir;
-      if (idx >= 0 && idx < visibleSnaps.length) openModal(visibleSnaps[idx]);
-    }
-
-    document.getElementById("modal-prev").addEventListener("click", () => navigateModal(-1));
-    document.getElementById("modal-next").addEventListener("click", () => navigateModal(1));
-    document.getElementById("modal-close").addEventListener("click", closeModal);
-    document.getElementById("modal-backdrop").addEventListener("click", closeModal);
-    document.addEventListener("keydown", e => {
-      if (modal.classList.contains("hidden")) return;
-      if (e.key === "Escape")      closeModal();
-      if (e.key === "ArrowLeft")   navigateModal(-1);
-      if (e.key === "ArrowRight")  navigateModal(1);
-    });
-    let touchStartX = 0;
-    modal.addEventListener("touchstart", e => { touchStartX = e.touches[0].clientX; }, {passive:true});
-    modal.addEventListener("touchend",   e => {
-      const dx = e.changedTouches[0].clientX - touchStartX;
-      if (Math.abs(dx) > 50) navigateModal(dx < 0 ? 1 : -1);
-    }, {passive:true});
-
-    document.getElementById("modal-download").addEventListener("click", () => { if (modalSnap) downloadSnap(modalSnap); });
-    document.getElementById("modal-delete").addEventListener("click", () => {
-      if (!modalSnap) return;
-      showConfirm("Delete snapshot", "Delete this snapshot? This cannot be undone.", async () => {
-        await fetch(snapDeleteUrl(modalSnap.id), {method:"DELETE"});
-        allSnaps = allSnaps.filter(x => x.id !== modalSnap.id);
-        rebuildSnapFilters(); renderGrid(); closeModal();
-      });
-    });
-
-    async function reclassifySnap(id) {
-      const url = URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}/reclassify`);
-      const res  = await fetch(url, {method:"POST"});
-      const text = await res.text();
-      let json;
-      try { json = JSON.parse(text); }
-      catch(_) { throw new Error(`Server returned non-JSON (${res.status}): ${text.slice(0, 300)}`); }
-      if (!res.ok) throw new Error(json.error || res.statusText);
-      return json;
-    }
-
-    function reclassifyTagsHtml(json) {
-      if (!json.detections.length) return `<span class="gesture-tag none">No hands</span>`;
-      return json.detections.map(d => {
-        const winner = `${GESTURE_EMOJI[d.gesture]||"?"} ${d.gesture.replace(/_/g," ")} <span style="opacity:.6;font-weight:400">${Math.round(d.score*100)}%</span>`;
-        if (!json.debug || !d.all_scores) return `<span class="gesture-tag detected">${winner}</span>`;
-        const fingerRows = d.finger_scores
-          ? Object.entries(d.finger_scores).map(([name, s]) =>
-              `<span style="display:flex;justify-content:space-between;gap:1rem">`+
-              `<span style="opacity:.7">${name}</span><span>${Math.round(s*100)}%</span></span>`
-            ).join("")
-          : "";
-        const gestureRows = d.all_scores.map(g =>
-          `<span style="display:flex;justify-content:space-between;gap:1rem;${g.gesture===d.gesture?"color:#58a6ff":""}">`+
-          `<span>${GESTURE_EMOJI[g.gesture]||"?"} ${g.gesture.replace(/_/g," ")}</span>`+
-          `<span>${Math.round(g.score*100)}%</span></span>`
-        ).join("");
-        const rotation = d.rotation_deg !== undefined
-          ? `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">${d.hand} hand · rotation ${d.rotation_deg}°</span>`
-          : `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">${d.hand} hand</span>`;
-        return `<span class="gesture-tag detected" style="display:block;padding:.4rem .5rem">${winner}`+
-               `<span style="display:block;margin-top:.4rem;font-size:.72rem;font-weight:400;opacity:.85">`+
-               `${rotation}`+
-               `<span style="display:block;opacity:.5;font-size:.68rem;margin:.2rem 0 .1rem">fingers</span>${fingerRows}`+
-               `<span style="display:block;opacity:.5;font-size:.68rem;margin:.35rem 0 .1rem">gestures</span>${gestureRows}`+
-               `</span></span>`;
-      }).join("");
-    }
-
-    document.getElementById("modal-reclassify").addEventListener("click", async () => {
-      if (!modalSnap) return;
-      const btn = document.getElementById("modal-reclassify");
-      btn.disabled = true; btn.textContent = "Classifying…";
-      try {
-        const json = await reclassifySnap(modalSnap.id);
-        const row  = document.querySelector("#modal-meta .meta-row:last-child");
-        if (row) row.querySelector(".meta-val").innerHTML =
-          reclassifyTagsHtml(json) +
-          `<span style="font-size:.75rem;color:#8b949e;margin-left:.4rem">reclassified</span>`;
-      } catch(err) {
-        alert("Reclassify failed: " + err.message);
-      } finally {
-        btn.disabled = false; btn.textContent = "Reclassify";
-      }
-    });
-
-    // ══ Logs ════════════════════════════════════════════════════════
-    const logContainer = document.getElementById("log-container");
-    const logStatus    = document.getElementById("log-status");
-    const sourceFilter = document.getElementById("source-filter");
-    let paused = false, activeLevels = new Set(["DEBUG","INFO","WARNING","ERROR","CRITICAL"]);
-    let activeSource = "", allEntries = [], knownSources = new Set(), entryCount = 0;
-
-    document.querySelectorAll(".level-badge").forEach(badge => {
-      badge.addEventListener("click", () => {
-        const lvl = badge.dataset.level;
-        if (activeLevels.has(lvl)) { activeLevels.delete(lvl); badge.classList.remove("active"); }
-        else                       { activeLevels.add(lvl);    badge.classList.add("active"); }
-        rerenderLogs();
-      });
-    });
-    sourceFilter.addEventListener("change", () => { activeSource = sourceFilter.value; rerenderLogs(); });
-
-    function logOk(e) { return activeLevels.has(e.level) && (!activeSource || e.source===activeSource); }
-    function makeLogRow(e) {
-      const row = document.createElement("div"); row.className = `log-entry ${e.level}`;
-      row.innerHTML = `<span class="log-ts">${e.timestamp.slice(11)}</span><span class="log-lvl">${e.level}</span><span class="log-src" title="${e.source}">${e.source}</span><span class="log-msg">${escHtml(e.message)}</span>`;
-      return row;
-    }
-    function rerenderLogs() {
-      logContainer.innerHTML = "";
-      allEntries.filter(logOk).forEach(e => logContainer.appendChild(makeLogRow(e)));
-      if (!paused) logContainer.scrollTop = logContainer.scrollHeight;
-    }
-    function appendLogEntry(e) {
-      allEntries.push(e);
-      if (!knownSources.has(e.source)) {
-        knownSources.add(e.source);
-        const opt = document.createElement("option"); opt.value = e.source; opt.textContent = e.source;
-        sourceFilter.appendChild(opt);
-      }
-      if (!logOk(e)) return;
-      logContainer.appendChild(makeLogRow(e));
-      entryCount++;
-      if (!paused) logContainer.scrollTop = logContainer.scrollHeight;
-      logStatus.textContent = `${entryCount} entries`;
-    }
-
-    document.getElementById("btn-pause").addEventListener("click", function() {
-      paused = !paused; this.textContent = paused?"Resume":"Pause"; this.classList.toggle("active",paused);
-      if (!paused) logContainer.scrollTop = logContainer.scrollHeight;
-    });
-    document.getElementById("btn-clear-logs").addEventListener("click", () => {
-      showConfirm("Clear logs", "Clear all log entries?", async () => {
-        await fetch(URL_LOGS_CLEAR,{method:"DELETE"});
-        allEntries=[]; knownSources.clear(); entryCount=0; logContainer.innerHTML="";
-        sourceFilter.innerHTML='<option value="">All sources</option>'; activeSource="";
-        logStatus.textContent="Cleared";
-      });
-    });
-    document.getElementById("btn-download-logs").addEventListener("click", () => {
-      const lines = allEntries.filter(logOk).map(e=>`${e.timestamp} [${e.level}] ${e.source}: ${e.message}`).join("\n");
-      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines],{type:"text/plain"}));
-      a.download = `hand-recognition-${new Date().toISOString().slice(0,19).replace(/:/g,"-")}.log`; a.click();
-    });
-
-    function connectStream() {
-      logStatus.textContent = "Connecting…";
-      const es = new EventSource(URL_LOGS_STREAM);
-      es.onopen    = () => { logStatus.textContent = `${entryCount} entries`; };
-      es.onmessage = e  => { try { appendLogEntry(JSON.parse(e.data)); } catch(_){} };
-      es.onerror   = () => { logStatus.textContent="Disconnected — reconnecting in 3 s…"; es.close(); setTimeout(connectStream,3000); };
-    }
-    connectStream();
-    loadSnapshots();
-    setInterval(() => {
-      if (document.getElementById("tab-snapshots").classList.contains("active")) loadSnapshots();
-    }, 10000);
-
-    // ══ MediaPipe ═══════════════════════════════════════════════════
     const ALL_GESTURES = {{ available_gestures | tojson }};
-
     const INIT_ENABLED = new Set({{ (config.enabled_gestures | default([])) | tojson }});
-
-    (function buildGestureCheckboxes() {
-      const container = document.getElementById("gesture-checkboxes");
-      ALL_GESTURES.forEach(([value, label]) => {
-        const checked = INIT_ENABLED.size === 0 || INIT_ENABLED.has(value);
-        const wrap = document.createElement("label");
-        wrap.style.cssText = "display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:#c9d1d9";
-        wrap.innerHTML = `<input type="checkbox" name="enabled_gestures" value="${value}"
-          style="accent-color:#58a6ff;cursor:pointer" ${checked ? "checked" : ""} />
-          <code style="font-size:.8rem">${value}</code><span style="color:#8b949e">— ${label}</span>`;
-        container.appendChild(wrap);
-      });
-    })();
-
-    document.getElementById("mediapipe-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const status = document.getElementById("mediapipe-status");
-
-      const enabledGestures = [...document.querySelectorAll("input[name='enabled_gestures']:checked")]
-        .map(cb => cb.value);
-
-      const complexityRadio = e.target.querySelector("input[name='mediapipe_model_complexity']:checked");
-      const backendRadio    = e.target.querySelector("input[name='recognizer_backend']:checked");
-
-      const payload = {
-        enabled_gestures: enabledGestures,
-        mediapipe_min_detection_confidence: parseFloat(
-          document.getElementById("mediapipe_min_detection_confidence").value
-        ),
-        mediapipe_max_num_hands: parseInt(
-          document.getElementById("mediapipe_max_num_hands").value, 10
-        ),
-        mediapipe_model_complexity: complexityRadio ? parseInt(complexityRadio.value, 10) : 1,
-        landmark_sigmoid_k:        parseFloat(document.getElementById("landmark_sigmoid_k").value),
-        landmark_score_threshold:  parseFloat(document.getElementById("landmark_score_threshold").value),
-        landmark_thumb_angle:      parseFloat(document.getElementById("landmark_thumb_angle").value),
-        recognizer_backend: backendRadio ? backendRadio.value : "landmarks",
-        gesture_recognizer_model_path: document.getElementById("gesture_recognizer_model_path").value.trim(),
-      };
-
-      status.textContent = "Saving…"; status.className = "save-status";
-      try {
-        const res  = await fetch(URL_CONFIG, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-        const json = await res.json();
-        if (res.ok) {
-          status.textContent = "Saved. Restart the add-on to apply model setting changes.";
-          status.className = "save-status ok";
-        } else {
-          status.textContent = "Error: " + (json.error || res.statusText);
-          status.className = "save-status err";
-        }
-      } catch(err) {
-        status.textContent = "Network error: " + err.message;
-        status.className = "save-status err";
-      }
-    });
-
-    // ── Backend visibility toggle ────────────────────────────────────
-    function updateBackendVisibility() {
-      const backend = document.querySelector("input[name='recognizer_backend']:checked")?.value || "landmarks";
-      document.getElementById("landmark-settings").style.display  = backend === "landmarks"           ? "" : "none";
-      document.getElementById("gr-model-section").style.display   = backend === "gesture_recognizer" ? "" : "none";
-    }
-    document.querySelectorAll("input[name='recognizer_backend']").forEach(r =>
-      r.addEventListener("change", updateBackendVisibility)
-    );
-    updateBackendVisibility();
-
-    // ── GestureRecognizer model download ────────────────────────────
-    async function refreshModelStatus() {
-      const badge = document.getElementById("model-status-badge");
-      try {
-        const res  = await fetch("{{ url_for('gesture_model_status') }}");
-        const json = await res.json();
-        if (json.exists) {
-          badge.textContent = `Model present (${json.size_mb} MB)`;
-          badge.style.cssText = "font-size:.8rem;color:#3fb950";
-        } else {
-          badge.textContent = "Model not found";
-          badge.style.cssText = "font-size:.8rem;color:#f85149";
-        }
-      } catch {
-        badge.textContent = "";
-      }
-    }
-    refreshModelStatus();
-
-    document.getElementById("btn-download-model").addEventListener("click", async () => {
-      const btn    = document.getElementById("btn-download-model");
-      const status = document.getElementById("download-status");
-      btn.disabled = true;
-      btn.textContent = "Downloading…";
-      status.textContent = "Downloading model, this may take a moment…";
-      status.className = "save-status";
-      try {
-        const res  = await fetch("{{ url_for('download_gesture_model') }}", { method: "POST" });
-        const json = await res.json();
-        if (res.ok) {
-          status.textContent = `Downloaded successfully (${json.size_mb} MB) → ${json.path}`;
-          status.className = "save-status ok";
-          refreshModelStatus();
-        } else {
-          status.textContent = "Error: " + (json.error || res.statusText);
-          status.className = "save-status err";
-        }
-      } catch(err) {
-        status.textContent = "Network error: " + err.message;
-        status.className = "save-status err";
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Download model";
-      }
-    });
-
-    // ── Confirm modal ───────────────────────────────────────────────
-    const confirmModal = document.getElementById("confirm-modal");
-    let confirmCallback = null;
-    function showConfirm(title, message, onConfirm) {
-      document.getElementById("confirm-title").textContent   = title;
-      document.getElementById("confirm-message").textContent = message;
-      confirmCallback = onConfirm;
-      confirmModal.classList.remove("hidden");
-    }
-    function closeConfirm() { confirmModal.classList.add("hidden"); confirmCallback = null; }
-    document.getElementById("confirm-close").addEventListener("click", closeConfirm);
-    document.getElementById("confirm-cancel").addEventListener("click", closeConfirm);
-    document.getElementById("confirm-backdrop").addEventListener("click", closeConfirm);
-    document.getElementById("confirm-ok").addEventListener("click", () => {
-      const cb = confirmCallback; closeConfirm(); if (cb) cb();
-    });
-
-    // ── Power button ────────────────────────────────────────────────
-    const powerMenu = document.getElementById("power-menu");
-    document.getElementById("power-btn").addEventListener("click", e => {
-      e.stopPropagation(); powerMenu.classList.toggle("open");
-    });
-    document.addEventListener("click", () => powerMenu.classList.remove("open"));
-    function showRestartCountdown() {
-      const restartModal = document.getElementById("restart-modal");
-      const countdownEl  = document.getElementById("restart-countdown");
-      restartModal.classList.remove("hidden");
-      let n = 15;
-      countdownEl.textContent = n;
-      const timer = setInterval(() => {
-        n--;
-        countdownEl.textContent = n;
-        if (n <= 0) { clearInterval(timer); location.reload(); }
-      }, 1000);
-      document.getElementById("btn-reload-now").addEventListener("click", () => {
-        clearInterval(timer); location.reload();
-      }, {once: true});
-    }
-
-    document.getElementById("btn-restart").addEventListener("click", () => {
-      powerMenu.classList.remove("open");
-      showConfirm("Restart", "Restart the add-on?", async () => {
-        showRestartCountdown();
-        fetch(URL_RESTART, {method:"POST"});
-      });
-    });
-    document.getElementById("btn-shutdown").addEventListener("click", () => {
-      powerMenu.classList.remove("open");
-      showConfirm("Shutdown", "Stop the add-on? You will need to start it manually.", async () => {
-        await fetch(URL_SHUTDOWN, {method:"POST"});
-      });
-    });
-
-    // ── Shared helpers ──────────────────────────────────────────────
-    function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-
-    {% if debug_mode %}
-    // ══ Debug tab ═══════════════════════════════════════════════════
-    (function() {
-      let webcamStream = null;
-      const video       = document.getElementById("debug-webcam");
-      const placeholder = document.getElementById("debug-webcam-placeholder");
-      const btnStart    = document.getElementById("btn-start-webcam");
-      const btnStop     = document.getElementById("btn-stop-webcam");
-      const statusEl    = document.getElementById("debug-webcam-status");
-      const camSelect   = document.getElementById("debug-cam-select");
-
-      const secureCtx = !!navigator.mediaDevices;
-
-      function showInsecureWarning() {
-        placeholder.innerHTML =
-          `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#e3b341" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>` +
-          `<span style="color:#e3b341;font-weight:600">Camera unavailable</span>` +
-          `<span style="color:#8b949e;font-size:.78rem;max-width:320px;text-align:center">` +
-          `Camera access requires a secure context (HTTPS or localhost).<br>` +
-          `The add-on is served over HTTP, so the browser blocks <code>getUserMedia</code>.<br>` +
-          `Access the UI via <strong>HTTPS</strong> or an SSL-terminated proxy to use this feature.` +
-          `</span>`;
-        btnStart.disabled = true;
-        camSelect.disabled = true;
-      }
-
-      async function populateCameras() {
-        if (!secureCtx) { showInsecureWarning(); return; }
-        try {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const cams = devices.filter(d => d.kind === "videoinput");
-          const prev = camSelect.value;
-          camSelect.innerHTML = "";
-          if (!cams.length) {
-            const o = document.createElement("option"); o.textContent = "No cameras found";
-            camSelect.appendChild(o); return;
-          }
-          cams.forEach((cam, i) => {
-            const o = document.createElement("option");
-            o.value = cam.deviceId;
-            o.textContent = cam.label || `Camera ${i + 1}`;
-            camSelect.appendChild(o);
-          });
-          if (prev) camSelect.value = prev;
-        } catch(e) { statusEl.textContent = "Cannot enumerate cameras: " + e.message; }
-      }
-
-      async function startWebcam() {
-        if (!secureCtx) { showInsecureWarning(); return; }
-        const deviceId = camSelect.value;
-        try {
-          statusEl.textContent = "Requesting camera…";
-          webcamStream = await navigator.mediaDevices.getUserMedia({
-            video: deviceId ? { deviceId: { exact: deviceId } } : true,
-            audio: false,
-          });
-          video.srcObject = webcamStream;
-          placeholder.style.display = "none";
-          video.style.display = "block";
-          btnStart.disabled = true;
-          btnStop.disabled  = false;
-          const track = webcamStream.getVideoTracks()[0];
-          statusEl.textContent = track ? `Active: ${track.label}` : "Camera active";
-          await populateCameras();  // refresh labels after permission granted
-        } catch(e) { statusEl.textContent = "Error: " + e.message; }
-      }
-
-      function stopWebcam() {
-        if (webcamStream) { webcamStream.getTracks().forEach(t => t.stop()); webcamStream = null; }
-        video.srcObject = null;
-        video.style.display = "none";
-        placeholder.style.display = "";
-        btnStart.disabled = false;
-        btnStop.disabled  = true;
-        statusEl.textContent = "Camera stopped";
-        clearSkeleton();
-      }
-
-      btnStart.addEventListener("click", startWebcam);
-      btnStop.addEventListener("click",  stopWebcam);
-
-      // Stop webcam and auto-analyze when navigating away from debug tab
-      document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          if (btn.dataset.tab !== "debug") {
-            if (webcamStream) stopWebcam();
-            stopAutoTimer();
-            autoCheckbox.checked = false;
-          }
-        });
-      });
-
-      // Initial camera list (labels may be empty until permission is granted)
-      populateCameras();
-
-      // ── Slider ↔ number input sync ──────────────────────────────
-      [
-        ["debug-sigmoid-k",    "debug-sigmoid-k-num"   ],
-        ["debug-score-thresh", "debug-score-thresh-num"],
-        ["debug-thumb-angle",  "debug-thumb-angle-num" ],
-        ["debug-det-conf",     "debug-det-conf-num"    ],
-      ].forEach(([sliderId, numId]) => {
-        const s = document.getElementById(sliderId);
-        const n = document.getElementById(numId);
-        s.addEventListener("input", () => { n.value = s.value; });
-        n.addEventListener("input", () => { s.value = n.value; });
-      });
-
-      // ── Live analysis ────────────────────────────────────────────
-      const analysisBody  = document.getElementById("debug-analysis-body");
-      const btnCapture    = document.getElementById("btn-capture-analyze");
-      const autoCheckbox  = document.getElementById("debug-auto-analyze");
-      const intervalSel   = document.getElementById("debug-interval-select");
-      const captureCanvas = document.createElement("canvas");
-      let   autoTimer     = null;
-      let   analyzing     = false;
-
-      function renderAnalysis(json) {
-        if (!json.detections || !json.detections.length) {
-          analysisBody.innerHTML = `<div class="debug-analysis-idle">No hands detected.</div>`;
-          return;
-        }
-        analysisBody.innerHTML = json.detections.map(d => {
-          const pct  = n => Math.round(n * 100);
-          const bars = d.finger_scores
-            ? Object.entries(d.finger_scores).map(([name, s]) =>
-                `<div class="debug-bar-row">
-                  <span class="debug-bar-name">${name}</span>
-                  <div class="debug-bar-track"><div class="debug-bar-fill" style="width:${pct(s)}%"></div></div>
-                  <span class="debug-bar-pct">${pct(s)}%</span>
-                </div>`).join("")
-            : "";
-          const gestures = d.all_scores
-            ? d.all_scores.map(g =>
-                `<div class="debug-gesture-row${g.gesture === d.gesture ? " winner" : ""}">
-                  <span class="debug-gesture-name">${GESTURE_EMOJI[g.gesture] || "?"} ${g.gesture.replace(/_/g," ")}</span>
-                  <span class="debug-gesture-pct">${pct(g.score)}%</span>
-                </div>`).join("")
-            : "";
-          const rotation = d.rotation_deg !== undefined ? ` · ${d.rotation_deg}°` : "";
-          return `<div class="debug-hand">
-            <div class="debug-hand-header">
-              <span class="debug-hand-gesture">${GESTURE_EMOJI[d.gesture] || "?"} ${d.gesture.replace(/_/g," ")}</span>
-              <span class="debug-hand-score">${pct(d.score)}%</span>
-              <span class="debug-hand-meta">${escHtml(d.hand)} hand${rotation}</span>
-            </div>
-            <div class="debug-hand-body">
-              ${bars ? `<div class="debug-hand-section"><div class="debug-section-label">Fingers</div>${bars}</div>` : ""}
-              ${gestures ? `<div class="debug-hand-section"><div class="debug-section-label">Gestures</div>${gestures}</div>` : ""}
-            </div>
-          </div>`;
-        }).join("");
-      }
-
-      // ── Skeleton overlay ─────────────────────────────────────────
-      const skelCanvas = document.getElementById("debug-skeleton");
-      const skelCtx    = skelCanvas.getContext("2d");
-
-      // MediaPipe hand topology, grouped by finger for colour-coding
-      const SKEL_GROUPS = [
-        { color: "#8b949e", pairs: [[0,1],[0,5],[0,9],[0,13],[0,17],[5,9],[9,13],[13,17]] }, // palm
-        { color: "#e3b341", pairs: [[1,2],[2,3],[3,4]]            }, // thumb
-        { color: "#58a6ff", pairs: [[5,6],[6,7],[7,8]]            }, // index
-        { color: "#3fb950", pairs: [[9,10],[10,11],[11,12]]        }, // middle
-        { color: "#f78166", pairs: [[13,14],[14,15],[15,16]]       }, // ring
-        { color: "#d2a8ff", pairs: [[17,18],[18,19],[19,20]]       }, // pinky
-      ];
-
-      // Returns the sub-rect where the video frame is actually rendered
-      // (accounts for object-fit:contain letterboxing)
-      function videoRenderRect() {
-        const vw = video.videoWidth, vh = video.videoHeight;
-        const cw = video.clientWidth, ch = video.clientHeight;
-        if (!vw || !vh) return { x: 0, y: 0, w: cw, h: ch };
-        const scale = Math.min(cw / vw, ch / vh);
-        const rw = vw * scale, rh = vh * scale;
-        return { x: (cw - rw) / 2, y: (ch - rh) / 2, w: rw, h: rh };
-      }
-
-      function drawSkeleton(detections) {
-        skelCanvas.width  = video.clientWidth;
-        skelCanvas.height = video.clientHeight;
-        skelCtx.clearRect(0, 0, skelCanvas.width, skelCanvas.height);
-
-        const hasLandmarks = detections && detections.some(d => d.landmarks && d.landmarks.length);
-        skelCanvas.style.display = hasLandmarks ? "block" : "none";
-        if (!hasLandmarks) return;
-
-        const r = videoRenderRect();
-
-        detections.forEach(d => {
-          if (!d.landmarks) return;
-          const lms = d.landmarks;
-          const px = i => r.x + lms[i].x * r.w;
-          const py = i => r.y + lms[i].y * r.h;
-
-          // Bones
-          skelCtx.lineWidth = 2;
-          skelCtx.lineCap   = "round";
-          SKEL_GROUPS.forEach(({ color, pairs }) => {
-            skelCtx.strokeStyle = color;
-            pairs.forEach(([a, b]) => {
-              skelCtx.beginPath();
-              skelCtx.moveTo(px(a), py(a));
-              skelCtx.lineTo(px(b), py(b));
-              skelCtx.stroke();
-            });
-          });
-
-          // Joints
-          lms.forEach((lm, i) => {
-            skelCtx.beginPath();
-            skelCtx.arc(r.x + lm.x * r.w, r.y + lm.y * r.h, i === 0 ? 4 : 3, 0, Math.PI * 2);
-            skelCtx.fillStyle = i === 0 ? "#ffffff" : "#58a6ff";
-            skelCtx.fill();
-          });
-        });
-      }
-
-      function clearSkeleton() {
-        skelCtx.clearRect(0, 0, skelCanvas.width, skelCanvas.height);
-        skelCanvas.style.display = "none";
-      }
-
-      async function captureAndAnalyze() {
-        if (analyzing || !webcamStream) return;
-        analyzing = true;
-        btnCapture.disabled = true;
-        try {
-          captureCanvas.width  = video.videoWidth  || 640;
-          captureCanvas.height = video.videoHeight || 480;
-          captureCanvas.getContext("2d").drawImage(video, 0, 0);
-          const blob = await new Promise(res => captureCanvas.toBlob(res, "image/jpeg", 0.92));
-          const fd   = new FormData();
-          fd.append("image", blob, "frame.jpg");
-          const res  = await fetch(URL_DEBUG_ANALYZE, { method: "POST", body: fd });
-          const json = await res.json();
-          if (!res.ok) {
-            analysisBody.innerHTML = `<div class="debug-analysis-idle" style="color:#f85149">Error: ${escHtml(json.error || res.statusText)}</div>`;
-            clearSkeleton();
-          } else {
-            renderAnalysis(json);
-            drawSkeleton(json.detections);
-          }
-        } catch(e) {
-          analysisBody.innerHTML = `<div class="debug-analysis-idle" style="color:#f85149">Network error: ${escHtml(e.message)}</div>`;
-          clearSkeleton();
-        } finally {
-          analyzing = false;
-          btnCapture.disabled = false;
-        }
-      }
-
-      function startAutoTimer() {
-        stopAutoTimer();
-        autoTimer = setInterval(() => { if (webcamStream) captureAndAnalyze(); }, parseInt(intervalSel.value, 10));
-      }
-      function stopAutoTimer() { if (autoTimer) { clearInterval(autoTimer); autoTimer = null; } }
-
-      btnCapture.addEventListener("click", captureAndAnalyze);
-      autoCheckbox.addEventListener("change", () => {
-        if (autoCheckbox.checked) startAutoTimer(); else stopAutoTimer();
-      });
-      intervalSel.addEventListener("change", () => { if (autoCheckbox.checked) startAutoTimer(); });
-
-      // ── Save parameters ─────────────────────────────────────────
-      document.getElementById("btn-debug-save-params").addEventListener("click", async () => {
-        const st = document.getElementById("debug-params-status");
-        const payload = {
-          landmark_sigmoid_k:                 parseFloat(document.getElementById("debug-sigmoid-k-num").value),
-          landmark_score_threshold:           parseFloat(document.getElementById("debug-score-thresh-num").value),
-          landmark_thumb_angle:               parseFloat(document.getElementById("debug-thumb-angle-num").value),
-          mediapipe_min_detection_confidence: parseFloat(document.getElementById("debug-det-conf-num").value),
-        };
-        st.textContent = "Saving…"; st.className = "save-status";
-        try {
-          const res  = await fetch(URL_CONFIG, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-          const json = await res.json();
-          if (res.ok) { st.textContent = "Saved."; st.className = "save-status ok"; }
-          else        { st.textContent = "Error: " + (json.error || res.statusText); st.className = "save-status err"; }
-        } catch(e) { st.textContent = "Network error: " + e.message; st.className = "save-status err"; }
-      });
-    })();
-    {% endif %}
   </script>
+
+  <!-- ── Application scripts ─────────────────────────────────────── -->
+  <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/tabs.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/config-form.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/detection-form.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/mediapipe-form.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/snapshots.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/logs.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/power.js') }}"></script>
+  {% if debug_mode %}
+  <script src="{{ url_for('static', filename='js/debug.js') }}"></script>
+  {% endif %}
+
 </body>
 </html>
