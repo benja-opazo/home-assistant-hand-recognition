@@ -416,3 +416,15 @@ button.primary:hover { background: #2ea043; }
 .debug-gesture-row.winner .debug-gesture-pct  { color: #3fb950; font-weight: 600; }
 .debug-gesture-name { color: #8b949e; flex: 1; }
 .debug-gesture-pct  { color: #6e7681; min-width: 2.5rem; text-align: right; }
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+.app-footer {
+  border-top: 1px solid #21262d;
+  color: #6e7681;
+  font-size: .75rem;
+  margin-top: 2rem;
+  padding: .75rem 1.5rem;
+  text-align: center;
+}
+.app-footer a { color: #58a6ff; text-decoration: none; }
+.app-footer a:hover { text-decoration: underline; }

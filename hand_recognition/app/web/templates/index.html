@@ -557,6 +557,14 @@
     </div>
   </div>
 
+  <!-- ── Footer ──────────────────────────────────────────────────── -->
+  <footer class="app-footer">
+    Hand Recognition Tool by Benjamin Opazo
+    {% if version %}
+    <a href="https://github.com/benja-opazo/home-assistant-hand-recognition" target="_blank" rel="noopener">v{{ version }}</a>
+    {% endif %}
+  </footer>
+
   <!-- ── Server-injected constants (must load before external scripts) ── -->
   <script>
     const URL_CONFIG              = {{ url_for('update_config')          | tojson }};

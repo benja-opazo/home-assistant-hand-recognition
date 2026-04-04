@@ -48,8 +48,20 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
         except Exception as e:
             logger.error("Failed to load config: %s", e)
             cfg = {}
+        import yaml as _yaml
+        try:
+            with open("/data/options.json") as f:
+                import json as _json
+                version = _json.load(f).get("version", "")
+        except Exception:
+            try:
+                addon_cfg_path = os.path.join(os.path.dirname(__file__), "..", "..", "config.yaml")
+                with open(addon_cfg_path) as f:
+                    version = _yaml.safe_load(f).get("version", "")
+            except Exception:
+                version = ""
         return render_template("index.html", config=cfg, available_gestures=available_gestures or [],
-                               debug_mode=bool(cfg.get("debug_mode", False)))
+                               debug_mode=bool(cfg.get("debug_mode", False)), version=version)
 
     @app.post("/api/config")
     def update_config():
