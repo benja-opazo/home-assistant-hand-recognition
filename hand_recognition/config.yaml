@@ -1,6 +1,6 @@
 name: Hand Recognition
 description: Detects and classifies hand gestures from Frigate camera snapshots using MediaPipe.
-version: "0.3.17"
+version: "0.3.19"
 slug: hand_recognition
 init: false
 arch:
