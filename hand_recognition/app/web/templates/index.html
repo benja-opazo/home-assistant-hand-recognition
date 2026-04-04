@@ -541,6 +541,34 @@
     </div>
   </div>
 
+  {% if debug_mode %}
+  <!-- ══ Reclassify-MQTT notice modal (debug only) ══════════════════ -->
+  <div id="reclassify-notice-modal" class="modal hidden">
+    <div class="modal-backdrop" id="reclassify-notice-backdrop"></div>
+    <div class="modal-content" style="max-width:400px">
+      <div class="modal-header">
+        <span class="modal-title">Reclassify sends MQTT</span>
+        <button class="modal-close" id="reclassify-notice-close">×</button>
+      </div>
+      <p class="confirm-body">
+        Reclassifying a snapshot will run the recognition algorithm and
+        <strong>publish the result as an MQTT message</strong> using the
+        configured topic, exactly as if the event had been processed live.
+      </p>
+      <div class="confirm-footer" style="flex-direction:column;align-items:stretch;gap:.6rem">
+        <label class="modal-check-label">
+          <input type="checkbox" id="reclassify-notice-suppress" />
+          Don't show this again
+        </label>
+        <div style="display:flex;gap:.5rem;justify-content:flex-end">
+          <button class="modal-btn" id="reclassify-notice-cancel">Cancel</button>
+          <button class="modal-btn primary" id="reclassify-notice-ok">Reclassify</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ══ Confirm modal ══════════════════════════════════════════════ -->
   <div id="confirm-modal" class="modal hidden">
     <div class="modal-backdrop" id="confirm-backdrop"></div>

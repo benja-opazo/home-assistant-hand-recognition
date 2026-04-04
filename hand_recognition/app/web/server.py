@@ -32,7 +32,7 @@ class _ReverseProxied:
         return self.app(environ, start_response)
 
 
-def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: SnapshotStore, available_gestures: list[tuple[str, str]] | None = None, recognizer=None) -> Flask:
+def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: SnapshotStore, available_gestures: list[tuple[str, str]] | None = None, recognizer=None, publisher=None) -> Flask:
     app = Flask(__name__, template_folder="templates")
     app.wsgi_app = _ReverseProxied(app.wsgi_app)
     app.config["current_config"] = config
@@ -208,6 +208,8 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
                 else recognizer.recognize(image)
             )
             recognizer.close()
+            if debug and publisher is not None:
+                publisher.publish(s["camera"], detections)
             payload = {"detections": detections, "debug": debug}
             logger.debug("Reclassify response for %s: %s", snapshot_id, payload)
             return jsonify(payload)

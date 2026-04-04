@@ -306,7 +306,10 @@ button.primary:hover { background: #2ea043; }
   transition: background .15s;
 }
 .modal-btn:hover { background: #30363d; color: #e6edf3; }
-.modal-btn.danger:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
+.modal-btn.danger:hover  { background: #b91c1c; border-color: #f85149; color: #fff; }
+.modal-btn.primary       { background: #1f6feb; border-color: #388bfd; color: #fff; }
+.modal-btn.primary:hover { background: #388bfd; }
+.modal-check-label { align-items: center; color: #8b949e; cursor: pointer; display: flex; font-size: .82rem; gap: .45rem; }
 
 /* ── Snapshot modal nav arrows ─────────────────────────────── */
 .modal-nav {

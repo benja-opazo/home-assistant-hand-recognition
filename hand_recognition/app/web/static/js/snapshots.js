@@ -1,6 +1,36 @@
 function snapImageUrl(id)  { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}/image`); }
 function snapDeleteUrl(id) { return URL_SNAPSHOTS.replace(/\/api\/snapshots.*/, `/api/snapshots/${id}`); }
 
+// ── Reclassify-MQTT notice (debug mode only) ──────────────────────
+const _RECLF_SUPPRESS_KEY = "reclassify_notice_suppressed";
+const _reclNoticeModal     = document.getElementById("reclassify-notice-modal");
+let   _reclNoticeCallback  = null;
+
+if (_reclNoticeModal) {
+  document.getElementById("reclassify-notice-close").addEventListener("click", () => {
+    _reclNoticeModal.classList.add("hidden"); _reclNoticeCallback = null;
+  });
+  document.getElementById("reclassify-notice-cancel").addEventListener("click", () => {
+    _reclNoticeModal.classList.add("hidden"); _reclNoticeCallback = null;
+  });
+  document.getElementById("reclassify-notice-backdrop").addEventListener("click", () => {
+    _reclNoticeModal.classList.add("hidden"); _reclNoticeCallback = null;
+  });
+  document.getElementById("reclassify-notice-ok").addEventListener("click", () => {
+    if (document.getElementById("reclassify-notice-suppress").checked)
+      localStorage.setItem(_RECLF_SUPPRESS_KEY, "1");
+    _reclNoticeModal.classList.add("hidden");
+    const cb = _reclNoticeCallback; _reclNoticeCallback = null; if (cb) cb();
+  });
+}
+
+function withReclassifyConfirm(callback) {
+  if (!_reclNoticeModal || localStorage.getItem(_RECLF_SUPPRESS_KEY)) { callback(); return; }
+  document.getElementById("reclassify-notice-suppress").checked = false;
+  _reclNoticeCallback = callback;
+  _reclNoticeModal.classList.remove("hidden");
+}
+
 let allSnaps = [], visibleSnaps = [], newSnapIds = new Set(), isFirstLoad = true;
 let activeGestureFilter = "", activeCamFilter = "";
 let modalSnap = null, modalSnapIndex = -1;
@@ -150,13 +180,15 @@ function renderGrid() {
     card.querySelector(".reclf").addEventListener("click", e => {
       e.stopPropagation();
       const btn = e.currentTarget;
-      btn.disabled = true; btn.textContent = "…";
-      reclassifySnap(s.id).then(json => {
-        card.querySelector(".snap-gesture-row").innerHTML = reclassifyTagsHtml(json);
-      }).catch(err => {
-        card.querySelector(".snap-gesture-row").innerHTML =
-          `<span class="gesture-tag none" title="${escHtml(err.message)}">Error</span>`;
-      }).finally(() => { btn.disabled = false; btn.textContent = "↺"; });
+      withReclassifyConfirm(() => {
+        btn.disabled = true; btn.textContent = "…";
+        reclassifySnap(s.id).then(json => {
+          card.querySelector(".snap-gesture-row").innerHTML = reclassifyTagsHtml(json);
+        }).catch(err => {
+          card.querySelector(".snap-gesture-row").innerHTML =
+            `<span class="gesture-tag none" title="${escHtml(err.message)}">Error</span>`;
+        }).finally(() => { btn.disabled = false; btn.textContent = "↺"; });
+      });
     });
     card.querySelector(".del").addEventListener("click", e => {
       e.stopPropagation();
@@ -278,18 +310,20 @@ function reclassifyTagsHtml(json) {
   }).join("");
 }
 
-document.getElementById("modal-reclassify").addEventListener("click", async () => {
+document.getElementById("modal-reclassify").addEventListener("click", () => {
   if (!modalSnap) return;
-  const btn = document.getElementById("modal-reclassify");
-  btn.disabled = true; btn.textContent = "Classifying…";
-  try {
-    const json = await reclassifySnap(modalSnap.id);
-    const row  = document.querySelector("#modal-meta .meta-row:last-child");
-    if (row) row.querySelector(".meta-val").innerHTML =
-      reclassifyTagsHtml(json) +
-      `<span style="font-size:.75rem;color:#8b949e;margin-left:.4rem">reclassified</span>`;
-  } catch(err) { alert("Reclassify failed: " + err.message); }
-  finally { btn.disabled = false; btn.textContent = "Reclassify"; }
+  withReclassifyConfirm(async () => {
+    const btn = document.getElementById("modal-reclassify");
+    btn.disabled = true; btn.textContent = "Classifying…";
+    try {
+      const json = await reclassifySnap(modalSnap.id);
+      const row  = document.querySelector("#modal-meta .meta-row:last-child");
+      if (row) row.querySelector(".meta-val").innerHTML =
+        reclassifyTagsHtml(json) +
+        `<span style="font-size:.75rem;color:#8b949e;margin-left:.4rem">reclassified</span>`;
+    } catch(err) { alert("Reclassify failed: " + err.message); }
+    finally { btn.disabled = false; btn.textContent = "Reclassify"; }
+  });
 });
 
 // ── Auto-refresh ─────────────────────────────────────────────────
