@@ -109,38 +109,60 @@
   let   autoTimer     = null;
   let   analyzing     = false;
 
+  const FINGER_ORDER = ["pinky", "ring", "middle", "index", "thumb"];
+
+  btnCapture.classList.add("btn-off");
+
+  function fingerBars(fingerScores) {
+    return FINGER_ORDER.map(name => {
+      const s = fingerScores ? (fingerScores[name] ?? 0) : 0;
+      const pct = Math.round(s * 100);
+      return `<div class="debug-bar-row">
+        <span class="debug-bar-name">${name}</span>
+        <div class="debug-bar-track"><div class="debug-bar-fill" style="width:${pct}%"></div></div>
+        <span class="debug-bar-pct">${pct}%</span>
+      </div>`;
+    }).join("");
+  }
+
+  function gestureRows(allScores, winner) {
+    const scores = allScores && allScores.length
+      ? allScores
+      : ALL_GESTURES.map(([g]) => ({ gesture: g, score: 0 }));
+    return scores.map(g =>
+      `<div class="debug-gesture-row${g.gesture === winner ? " winner" : ""}">
+        <span class="debug-gesture-name">${GESTURE_EMOJI[g.gesture] || "?"} ${g.gesture.replace(/_/g," ")}</span>
+        <span class="debug-gesture-pct">${Math.round(g.score * 100)}%</span>
+      </div>`).join("");
+  }
+
   function renderAnalysis(json) {
     if (!json.detections || !json.detections.length) {
-      analysisBody.innerHTML = `<div class="debug-analysis-idle">No hands detected.</div>`;
+      analysisBody.innerHTML = `<div class="debug-hand">
+        <div class="debug-hand-header">
+          <span class="debug-hand-gesture">No hands</span>
+          <span class="debug-hand-score">0%</span>
+          <span class="debug-hand-meta">— · —</span>
+        </div>
+        <div class="debug-hand-body">
+          <div class="debug-hand-section"><div class="debug-section-label">Fingers</div>${fingerBars(null)}</div>
+          <div class="debug-hand-section"><div class="debug-section-label">Gestures</div>${gestureRows(null, null)}</div>
+        </div>
+      </div>`;
       return;
     }
     analysisBody.innerHTML = json.detections.map(d => {
-      const pct  = n => Math.round(n * 100);
-      const bars = d.finger_scores
-        ? Object.entries(d.finger_scores).map(([name, s]) =>
-            `<div class="debug-bar-row">
-              <span class="debug-bar-name">${name}</span>
-              <div class="debug-bar-track"><div class="debug-bar-fill" style="width:${pct(s)}%"></div></div>
-              <span class="debug-bar-pct">${pct(s)}%</span>
-            </div>`).join("")
-        : "";
-      const gestures = d.all_scores
-        ? d.all_scores.map(g =>
-            `<div class="debug-gesture-row${g.gesture === d.gesture ? " winner" : ""}">
-              <span class="debug-gesture-name">${GESTURE_EMOJI[g.gesture] || "?"} ${g.gesture.replace(/_/g," ")}</span>
-              <span class="debug-gesture-pct">${pct(g.score)}%</span>
-            </div>`).join("")
-        : "";
       const rotation = d.rotation_deg !== undefined ? ` · ${d.rotation_deg}°` : "";
+      const facing   = d.facing ? ` · ${d.facing === "camera" ? "facing camera" : "facing away"}` : "";
       return `<div class="debug-hand">
         <div class="debug-hand-header">
           <span class="debug-hand-gesture">${GESTURE_EMOJI[d.gesture] || "?"} ${d.gesture.replace(/_/g," ")}</span>
-          <span class="debug-hand-score">${pct(d.score)}%</span>
-          <span class="debug-hand-meta">${escHtml(d.hand)} hand${rotation}</span>
+          <span class="debug-hand-score">${Math.round(d.score * 100)}%</span>
+          <span class="debug-hand-meta">${escHtml(d.hand)} hand${rotation}${facing}</span>
         </div>
         <div class="debug-hand-body">
-          ${bars     ? `<div class="debug-hand-section"><div class="debug-section-label">Fingers</div>${bars}</div>`     : ""}
-          ${gestures ? `<div class="debug-hand-section"><div class="debug-section-label">Gestures</div>${gestures}</div>` : ""}
+          <div class="debug-hand-section"><div class="debug-section-label">Fingers</div>${fingerBars(d.finger_scores)}</div>
+          <div class="debug-hand-section"><div class="debug-section-label">Gestures</div>${gestureRows(d.all_scores, d.gesture)}</div>
         </div>
       </div>`;
     }).join("");
@@ -232,9 +254,17 @@
   }
   function stopAutoTimer() { if (autoTimer) { clearInterval(autoTimer); autoTimer = null; } }
 
+  function setCaptureState(on) {
+    btnCapture.classList.toggle("btn-on",  on);
+    btnCapture.classList.toggle("btn-off", !on);
+  }
+
   btnCapture.addEventListener("click", captureAndAnalyze);
-  autoCheckbox.addEventListener("change", () => { if (autoCheckbox.checked) startAutoTimer(); else stopAutoTimer(); });
-  intervalSel.addEventListener("change",  () => { if (autoCheckbox.checked) startAutoTimer(); });
+  autoCheckbox.addEventListener("change", () => {
+    if (autoCheckbox.checked) { startAutoTimer(); setCaptureState(true); }
+    else                      { stopAutoTimer();  setCaptureState(false); }
+  });
+  intervalSel.addEventListener("change", () => { if (autoCheckbox.checked) startAutoTimer(); });
 
   // ── Save parameters ────────────────────────────────────────────
   document.getElementById("btn-debug-save-params").addEventListener("click", async () => {

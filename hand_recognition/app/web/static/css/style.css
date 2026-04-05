@@ -87,6 +87,10 @@ button.primary:hover { background: #2ea043; }
 .action-btn:hover  { background: #30363d; color: #e6edf3; }
 .action-btn.active { background: #1f6feb; border-color: #388bfd; color: #fff; }
 .action-btn.danger:hover { background: #b91c1c; border-color: #f85149; color: #fff; }
+.action-btn.btn-off { background: #6e1616; border-color: #f85149; color: #fff; }
+.action-btn.btn-off:hover { background: #b91c1c; border-color: #f85149; }
+.action-btn.btn-on  { background: #1a4721; border-color: #3fb950; color: #fff; }
+.action-btn.btn-on:hover  { background: #238636; border-color: #3fb950; }
 
 /* ── Detection tab ─────────────────────────────────────────── */
 .topic-options { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1rem; }

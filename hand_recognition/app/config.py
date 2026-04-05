@@ -25,6 +25,7 @@ def load_config() -> dict:
     if os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH, "r") as f:
             user_config = yaml.safe_load(f) or {}
+        user_config.pop("debug_mode", None)  # HA-managed only; never let config.yaml override
         config.update(user_config)
 
     return config

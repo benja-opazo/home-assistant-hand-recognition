@@ -116,6 +116,7 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
                     for f in filters if isinstance(f, dict)
                 ]
 
+            cfg.pop("debug_mode", None)  # HA-managed only; never persist to config.yaml
             save_config(cfg)
             app.config["current_config"] = cfg
 
@@ -211,7 +212,7 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
             if debug and publisher is not None:
                 enabled = set(cfg.get("enabled_gestures") or [])
                 publish_detections = [
-                    {"gesture": d["gesture"], "score": d["score"], "hand": d["hand"]}
+                    {"gesture": d["gesture"], "score": d["score"], "hand": d["hand"], "facing": d.get("facing", "unknown")}
                     for d in detections
                     if not enabled or d["gesture"] == "unknown" or d["gesture"] in enabled
                 ]

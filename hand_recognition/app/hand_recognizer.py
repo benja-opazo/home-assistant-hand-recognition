@@ -66,11 +66,12 @@ def _sigmoid(x: float) -> float:
 _FINGER_NAMES = ("thumb", "index", "middle", "ring", "pinky")
 
 
-def _finger_scores(hand_landmarks, sigmoid_k: float, thumb_angle_deg: float = 0.0, hand_label: str = "Right") -> tuple[tuple[float, ...], float]:
-    """Return (scores, angle_deg).
+def _finger_scores(hand_landmarks, sigmoid_k: float, thumb_angle_deg: float = 0.0, hand_label: str = "Right") -> tuple[tuple[float, ...], float, bool]:
+    """Return (scores, angle_deg, palm_facing).
 
     scores: continuous extension score in [0, 1] for each finger, order = _FINGER_NAMES.
     angle_deg: palm rotation in degrees (0 = upright, positive = clockwise).
+    palm_facing: True if the palm faces the camera, False if the back of the hand does.
     thumb_angle_deg: direction of thumb extension in the rotated frame, measured from
         horizontal (0° = x-axis only, 45° = equal x+y component).
     hand_label: "Right" or "Left". For left hands the x-axis is mirrored so the
@@ -114,7 +115,7 @@ def _finger_scores(hand_landmarks, sigmoid_k: float, thumb_angle_deg: float = 0.
 
     angle_deg = float(np.degrees(angle))
     angle_deg = ((angle_deg + 180) % 360) - 180  # normalise to [-180, 180]
-    return tuple(scores), round(angle_deg, 1)
+    return tuple(scores), round(angle_deg, 1), palm_facing
 
 
 def _match_gesture(scores: tuple[float, ...], score_threshold: float) -> tuple[str, float]:
@@ -210,14 +211,15 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            raw_label           = handedness.classification[0].label
-            hand_label          = "Left" if raw_label == "Right" else "Right"
-            scores, angle_deg   = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
-            gesture, confidence = _match_gesture(scores, self._score_threshold)
+            raw_label                    = handedness.classification[0].label
+            hand_label                   = "Left" if raw_label == "Right" else "Right"
+            scores, angle_deg, palm_facing = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
+            gesture, confidence          = _match_gesture(scores, self._score_threshold)
             detections.append({
                 "gesture":       gesture,
                 "score":         confidence,
                 "hand":          hand_label,
+                "facing":        "camera" if palm_facing else "away",
                 "rotation_deg":  angle_deg,
                 "finger_scores": {name: round(s, 3) for name, s in zip(_FINGER_NAMES, scores)},
                 "all_scores":    _all_gesture_scores(scores),
@@ -240,10 +242,10 @@ class HandRecognizer:
         for hand_landmarks, handedness in zip(
             results.multi_hand_landmarks, results.multi_handedness
         ):
-            raw_label           = handedness.classification[0].label
-            hand_label          = "Left" if raw_label == "Right" else "Right"  # "Left" or "Right"
-            scores, _           = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
-            gesture, confidence = _match_gesture(scores, self._score_threshold)
+            raw_label                      = handedness.classification[0].label
+            hand_label                     = "Left" if raw_label == "Right" else "Right"
+            scores, _, palm_facing         = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
+            gesture, confidence            = _match_gesture(scores, self._score_threshold)
 
             if gesture != "unknown" and gesture not in self._enabled:
                 logger.debug(
@@ -254,6 +256,7 @@ class HandRecognizer:
                 "gesture": gesture,
                 "score":   confidence,
                 "hand":    hand_label,
+                "facing":  "camera" if palm_facing else "away",
             })
             logger.debug("Detected %s hand: %s (score=%.3f)", hand_label, gesture, confidence)
 

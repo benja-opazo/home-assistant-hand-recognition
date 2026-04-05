@@ -12,8 +12,8 @@ class MQTTPublisher:
 
     def publish(self, camera: str, detections: list[dict]) -> None:
         topic   = self._topic_template.format(camera=camera)
-        by_hand = {d["hand"].lower(): {"gesture": d["gesture"], "score": d["score"]} for d in detections}
-        empty   = {"gesture": "unknown", "score": 0}
+        by_hand = {d["hand"].lower(): {"gesture": d["gesture"], "score": d["score"], "facing": d.get("facing", "unknown")} for d in detections}
+        empty   = {"gesture": "unknown", "score": 0, "facing": "unknown"}
         payload = json.dumps({
             "camera": camera,
             "left":   by_hand.get("left",  empty),

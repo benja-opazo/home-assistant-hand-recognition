@@ -33,6 +33,19 @@ _GESTURE_LABELS: dict[str, str] = {
 _ALL_GESTURES: list[str] = list(_GESTURE_MAP.values())
 
 
+def _palm_facing(landmarks, hand_label: str) -> bool:
+    """Return True if the palm faces the camera, False if the back of the hand does."""
+    dx = landmarks[9].x - landmarks[0].x
+    dy = landmarks[9].y - landmarks[0].y
+    angle = np.arctan2(dy, dx) + np.pi / 2
+    cos_a, sin_a = np.cos(-angle), np.sin(-angle)
+    # Only need rotated x for landmarks 1 (thumb MCP) and 17 (pinky MCP)
+    rx1  = landmarks[1].x  * cos_a - landmarks[1].y  * sin_a
+    rx17 = landmarks[17].x * cos_a - landmarks[17].y * sin_a
+    x_sign = -1.0 if hand_label == "Left" else 1.0
+    return x_sign * (rx1 - rx17) < 0
+
+
 class GestureRecognizer:
     def __init__(self, config: dict | None = None):
         cfg = config or {}
@@ -68,7 +81,7 @@ class GestureRecognizer:
             return []
 
         detections = []
-        for gestures, handedness in zip(result.gestures, result.handedness):
+        for gestures, handedness, hand_lms in zip(result.gestures, result.handedness, result.hand_landmarks):
             raw_name = gestures[0].category_name
             if raw_name == "None":
                 continue
@@ -81,10 +94,16 @@ class GestureRecognizer:
                 logger.debug("Gesture '%s' is disabled — skipping this detection", gesture)
                 continue
 
+            try:
+                facing = "camera" if _palm_facing(hand_lms, hand_label) else "away"
+            except Exception:
+                facing = "unknown"
+
             detections.append({
                 "gesture": gesture,
                 "score":   score,
                 "hand":    hand_label,
+                "facing":  facing,
             })
             logger.debug("Detected %s hand: %s (score=%.3f)", hand_label, gesture, score)
 

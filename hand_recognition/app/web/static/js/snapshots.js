@@ -288,19 +288,21 @@ function reclassifyTagsHtml(json) {
     const winner = `${GESTURE_EMOJI[d.gesture]||"?"} ${d.gesture.replace(/_/g," ")} <span style="opacity:.6;font-weight:400">${Math.round(d.score*100)}%</span>`;
     if (!json.debug || !d.all_scores) return `<span class="gesture-tag detected">${winner}</span>`;
     const fingerRows = d.finger_scores
-      ? Object.entries(d.finger_scores).map(([name, s]) =>
-          `<span style="display:flex;justify-content:space-between;gap:1rem">`+
-          `<span style="opacity:.7">${name}</span><span>${Math.round(s*100)}%</span></span>`
-        ).join("")
+      ? ["pinky","ring","middle","index","thumb"].map(name => {
+          const s = d.finger_scores[name] ?? 0;
+          return `<span style="display:flex;justify-content:space-between;gap:1rem">`+
+            `<span style="opacity:.7">${name}</span><span>${Math.round(s*100)}%</span></span>`;
+        }).join("")
       : "";
     const gestureRows = d.all_scores.map(g =>
       `<span style="display:flex;justify-content:space-between;gap:1rem;${g.gesture===d.gesture?"color:#58a6ff":""}">`+
       `<span>${GESTURE_EMOJI[g.gesture]||"?"} ${g.gesture.replace(/_/g," ")}</span>`+
       `<span>${Math.round(g.score*100)}%</span></span>`
     ).join("");
+    const facingStr = d.facing ? ` · ${d.facing === "camera" ? "facing camera" : "facing away"}` : "";
     const rotation = d.rotation_deg !== undefined
-      ? `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">${d.hand} hand · rotation ${d.rotation_deg}°</span>`
-      : `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">${d.hand} hand</span>`;
+      ? `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">${d.hand} hand · rotation ${d.rotation_deg}°${facingStr}</span>`
+      : `<span style="display:block;opacity:.55;font-size:.7rem;margin-bottom:.3rem">${d.hand} hand${facingStr}</span>`;
     return `<span class="gesture-tag detected" style="display:block;padding:.4rem .5rem">${winner}`+
            `<span style="display:block;margin-top:.4rem;font-size:.72rem;font-weight:400;opacity:.85">`+
            `${rotation}`+
