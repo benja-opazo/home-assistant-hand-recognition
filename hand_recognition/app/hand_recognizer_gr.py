@@ -43,7 +43,7 @@ def _palm_facing(landmarks, hand_label: str) -> bool:
     rx1  = landmarks[1].x  * cos_a - landmarks[1].y  * sin_a
     rx17 = landmarks[17].x * cos_a - landmarks[17].y * sin_a
     x_sign = -1.0 if hand_label == "Left" else 1.0
-    return x_sign * (rx1 - rx17) < 0
+    return x_sign * (rx1 - rx17) > 0
 
 
 class GestureRecognizer:

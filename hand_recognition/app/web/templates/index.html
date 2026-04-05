@@ -422,21 +422,17 @@
         <div class="debug-analysis-header">
           <span class="debug-analysis-title">Live Analysis</span>
           <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:.35rem;font-size:.8rem;color:#8b949e;cursor:pointer;user-select:none">
-              <input type="checkbox" id="debug-auto-analyze" style="accent-color:#58a6ff" />
-              Auto
-            </label>
             <select id="debug-interval-select">
-              <option value="500">0.5 s</option>
-              <option value="1000" selected>1 s</option>
+              <option value="500" selected>0.5 s</option>
+              <option value="1000">1 s</option>
               <option value="2000">2 s</option>
               <option value="5000">5 s</option>
             </select>
-            <button class="action-btn" id="btn-capture-analyze">Capture &amp; Analyze</button>
+            <button class="action-btn" id="btn-capture-analyze" style="min-width:9rem">Start Capturing</button>
           </div>
         </div>
         <div class="debug-analysis-body" id="debug-analysis-body">
-          <div class="debug-analysis-idle">Start the camera, then press Capture &amp; Analyze.</div>
+          <div class="debug-analysis-idle">Start the camera, then press Start Capturing.</div>
         </div>
       </div>
 

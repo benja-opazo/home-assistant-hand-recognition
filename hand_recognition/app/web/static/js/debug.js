@@ -70,6 +70,7 @@
     btnStop.disabled  = true;
     statusEl.textContent = "Camera stopped";
     clearSkeleton();
+    if (capturing) { stopAutoTimer(); setCaptureState(false); }
   }
 
   btnStart.addEventListener("click", startWebcam);
@@ -79,8 +80,8 @@
     btn.addEventListener("click", () => {
       if (btn.dataset.tab !== "debug") {
         if (webcamStream) stopWebcam();
+        if (capturing) setCaptureState(false);
         stopAutoTimer();
-        autoCheckbox.checked = false;
       }
     });
   });
@@ -103,11 +104,11 @@
   // ── Live analysis ──────────────────────────────────────────────
   const analysisBody  = document.getElementById("debug-analysis-body");
   const btnCapture    = document.getElementById("btn-capture-analyze");
-  const autoCheckbox  = document.getElementById("debug-auto-analyze");
   const intervalSel   = document.getElementById("debug-interval-select");
   const captureCanvas = document.createElement("canvas");
   let   autoTimer     = null;
   let   analyzing     = false;
+  let   capturing     = false;
 
   const FINGER_ORDER = ["pinky", "ring", "middle", "index", "thumb"];
 
@@ -136,35 +137,40 @@
       </div>`).join("");
   }
 
+  function handCard(label, gesture, scorePct, meta, fingerScores, allScores, winner) {
+    return `<div class="debug-hand">
+      <div class="debug-hand-header">
+        <span class="debug-hand-gesture">${gesture}</span>
+        <span class="debug-hand-score">${scorePct}%</span>
+        <span class="debug-hand-meta">${label} hand${meta}</span>
+      </div>
+      <div class="debug-hand-body">
+        <div class="debug-hand-section"><div class="debug-section-label">Fingers</div>${fingerBars(fingerScores)}</div>
+        <div class="debug-hand-section"><div class="debug-section-label">Gestures</div>${gestureRows(allScores, winner)}</div>
+      </div>
+    </div>`;
+  }
+
   function renderAnalysis(json) {
     if (!json.detections || !json.detections.length) {
-      analysisBody.innerHTML = `<div class="debug-hand">
-        <div class="debug-hand-header">
-          <span class="debug-hand-gesture">No hands</span>
-          <span class="debug-hand-score">0%</span>
-          <span class="debug-hand-meta">— · —</span>
-        </div>
-        <div class="debug-hand-body">
-          <div class="debug-hand-section"><div class="debug-section-label">Fingers</div>${fingerBars(null)}</div>
-          <div class="debug-hand-section"><div class="debug-section-label">Gestures</div>${gestureRows(null, null)}</div>
-        </div>
-      </div>`;
+      analysisBody.innerHTML =
+        handCard("Left",  "No hand", 0, "", null, null, null) +
+        handCard("Right", "No hand", 0, "", null, null, null);
       return;
     }
     analysisBody.innerHTML = json.detections.map(d => {
       const rotation = d.rotation_deg !== undefined ? ` · ${d.rotation_deg}°` : "";
       const facing   = d.facing ? ` · ${d.facing === "camera" ? "facing camera" : "facing away"}` : "";
-      return `<div class="debug-hand">
-        <div class="debug-hand-header">
-          <span class="debug-hand-gesture">${GESTURE_EMOJI[d.gesture] || "?"} ${d.gesture.replace(/_/g," ")}</span>
-          <span class="debug-hand-score">${Math.round(d.score * 100)}%</span>
-          <span class="debug-hand-meta">${escHtml(d.hand)} hand${rotation}${facing}</span>
-        </div>
-        <div class="debug-hand-body">
-          <div class="debug-hand-section"><div class="debug-section-label">Fingers</div>${fingerBars(d.finger_scores)}</div>
-          <div class="debug-hand-section"><div class="debug-section-label">Gestures</div>${gestureRows(d.all_scores, d.gesture)}</div>
-        </div>
-      </div>`;
+      const gesture  = `${GESTURE_EMOJI[d.gesture] || "?"} ${d.gesture.replace(/_/g," ")}`;
+      return handCard(
+        escHtml(d.hand),
+        gesture,
+        Math.round(d.score * 100),
+        rotation + facing,
+        d.finger_scores,
+        d.all_scores,
+        d.gesture,
+      );
     }).join("");
   }
 
@@ -255,16 +261,17 @@
   function stopAutoTimer() { if (autoTimer) { clearInterval(autoTimer); autoTimer = null; } }
 
   function setCaptureState(on) {
+    capturing = on;
     btnCapture.classList.toggle("btn-on",  on);
     btnCapture.classList.toggle("btn-off", !on);
+    btnCapture.textContent = on ? "Stop Capturing" : "Start Capturing";
   }
 
-  btnCapture.addEventListener("click", captureAndAnalyze);
-  autoCheckbox.addEventListener("change", () => {
-    if (autoCheckbox.checked) { startAutoTimer(); setCaptureState(true); }
-    else                      { stopAutoTimer();  setCaptureState(false); }
+  btnCapture.addEventListener("click", () => {
+    if (capturing) { stopAutoTimer();  setCaptureState(false); }
+    else           { startAutoTimer(); setCaptureState(true);  }
   });
-  intervalSel.addEventListener("change", () => { if (autoCheckbox.checked) startAutoTimer(); });
+  intervalSel.addEventListener("change", () => { if (capturing) startAutoTimer(); });
 
   // ── Save parameters ────────────────────────────────────────────
   document.getElementById("btn-debug-save-params").addEventListener("click", async () => {
