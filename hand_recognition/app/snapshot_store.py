@@ -85,6 +85,15 @@ class SnapshotStore:
             self._snapshots.clear()
             self._persist()
 
+    def update_detections(self, snapshot_id: str, detections: list[dict]) -> bool:
+        with self._lock:
+            for s in self._snapshots:
+                if s["id"] == snapshot_id:
+                    s["detections"] = detections
+                    self._persist()
+                    return True
+        return False
+
     def update_max(self, new_max: int) -> None:
         with self._lock:
             self._max = new_max

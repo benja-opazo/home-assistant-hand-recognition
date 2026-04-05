@@ -214,6 +214,11 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
                 else recognizer.recognize(image)
             )
             recognizer.close()
+            stored_fields = ("gesture", "score", "hand", "facing")
+            snapshot_store.update_detections(
+                snapshot_id,
+                [{k: d[k] for k in stored_fields if k in d} for d in detections],
+            )
             if debug and publisher is not None:
                 enabled = set(cfg.get("enabled_gestures") or [])
                 publish_detections = [
