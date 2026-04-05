@@ -51,7 +51,8 @@ class GestureRecognizer:
         cfg = config or {}
         model_path = cfg.get("gesture_recognizer_model_path", "/data/gesture_recognizer.task")
         enabled = cfg.get("enabled_gestures", _ALL_GESTURES)
-        self._enabled: set[str] = set(enabled) if enabled else set(_ALL_GESTURES)
+        self._enabled: set[str]        = set(enabled) if enabled else set(_ALL_GESTURES)
+        self._invert_hand_labels: bool = bool(cfg.get("invert_hand_labels", False))
 
         options = GestureRecognizerOptions(
             base_options=BaseOptions(model_asset_path=model_path),
@@ -89,6 +90,8 @@ class GestureRecognizer:
             gesture    = _GESTURE_MAP.get(raw_name, "unknown")
             score      = round(gestures[0].score, 3)
             hand_label = handedness[0].category_name  # "Left" or "Right"
+            if self._invert_hand_labels:
+                hand_label = "Right" if hand_label == "Left" else "Left"
 
             if gesture != "unknown" and gesture not in self._enabled:
                 logger.debug("Gesture '%s' is disabled — skipping this detection", gesture)

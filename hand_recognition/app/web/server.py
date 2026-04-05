@@ -80,6 +80,11 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
                           "frigate_snapshot_quality", "frigate_snapshot_height",
                           "frigate_snapshot_crop"]
             float_fields = ["mediapipe_min_detection_confidence", "landmark_sigmoid_k", "landmark_score_threshold", "landmark_thumb_angle"]
+            bool_fields  = ["invert_hand_labels"]
+
+            for field in bool_fields:
+                if field in data:
+                    cfg[field] = bool(data[field])
 
             for field in float_fields:
                 if field in data:

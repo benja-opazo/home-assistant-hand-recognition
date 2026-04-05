@@ -160,9 +160,10 @@ class HandRecognizer:
         cfg = config or {}
         enabled = cfg.get("enabled_gestures", ALL_GESTURES)
         self._enabled: set[str]      = set(enabled) if enabled else set(ALL_GESTURES)
-        self._sigmoid_k: float       = float(cfg.get("landmark_sigmoid_k",       _DEFAULT_SIGMOID_K))
-        self._score_threshold: float = float(cfg.get("landmark_score_threshold", _DEFAULT_SCORE_THRESHOLD))
-        self._thumb_angle: float     = float(cfg.get("landmark_thumb_angle",     _DEFAULT_THUMB_ANGLE))
+        self._sigmoid_k: float          = float(cfg.get("landmark_sigmoid_k",       _DEFAULT_SIGMOID_K))
+        self._score_threshold: float    = float(cfg.get("landmark_score_threshold", _DEFAULT_SCORE_THRESHOLD))
+        self._thumb_angle: float        = float(cfg.get("landmark_thumb_angle",     _DEFAULT_THUMB_ANGLE))
+        self._invert_hand_labels: bool  = bool(cfg.get("invert_hand_labels",        False))
 
         self._hands = mp.solutions.hands.Hands(
             static_image_mode=True,
@@ -191,9 +192,10 @@ class HandRecognizer:
         cfg = config or {}
         enabled = cfg.get("enabled_gestures", ALL_GESTURES)
         self._enabled         = set(enabled) if enabled else set(ALL_GESTURES)
-        self._sigmoid_k       = float(cfg.get("landmark_sigmoid_k",       _DEFAULT_SIGMOID_K))
-        self._score_threshold = float(cfg.get("landmark_score_threshold", _DEFAULT_SCORE_THRESHOLD))
-        self._thumb_angle     = float(cfg.get("landmark_thumb_angle",     _DEFAULT_THUMB_ANGLE))
+        self._sigmoid_k          = float(cfg.get("landmark_sigmoid_k",       _DEFAULT_SIGMOID_K))
+        self._score_threshold    = float(cfg.get("landmark_score_threshold", _DEFAULT_SCORE_THRESHOLD))
+        self._thumb_angle        = float(cfg.get("landmark_thumb_angle",     _DEFAULT_THUMB_ANGLE))
+        self._invert_hand_labels = bool(cfg.get("invert_hand_labels",        False))
         logger.info(
             "Detection parameters reloaded — sigmoid_k=%.1f, score_threshold=%.2f, "
             "thumb_angle=%.1f°, enabled_gestures=%s",
@@ -214,6 +216,8 @@ class HandRecognizer:
         ):
             raw_label                    = handedness.classification[0].label
             hand_label                   = "Left" if raw_label == "Right" else "Right"
+            if self._invert_hand_labels:
+                hand_label = "Right" if hand_label == "Left" else "Left"
             scores, angle_deg, palm_facing = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
             gesture, confidence          = _match_gesture(scores, self._score_threshold)
             detections.append({
@@ -245,6 +249,8 @@ class HandRecognizer:
         ):
             raw_label                      = handedness.classification[0].label
             hand_label                     = "Left" if raw_label == "Right" else "Right"
+            if self._invert_hand_labels:
+                hand_label = "Right" if hand_label == "Left" else "Left"
             scores, _, palm_facing         = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
             gesture, confidence            = _match_gesture(scores, self._score_threshold)
 

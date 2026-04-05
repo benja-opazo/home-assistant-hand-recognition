@@ -27,6 +27,7 @@ document.getElementById("mediapipe-form").addEventListener("submit", async (e) =
     landmark_thumb_angle:               parseFloat(document.getElementById("landmark_thumb_angle").value),
     recognizer_backend:                 backendRadio ? backendRadio.value : "landmarks",
     gesture_recognizer_model_path:      document.getElementById("gesture_recognizer_model_path").value.trim(),
+    invert_hand_labels:                 document.getElementById("mp-invert-hand-labels").checked,
   };
   status.textContent = "Saving…"; status.className = "save-status";
   try {

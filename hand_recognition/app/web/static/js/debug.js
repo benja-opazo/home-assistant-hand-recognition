@@ -1,12 +1,20 @@
 (function() {
   let webcamStream = null;
-  const video       = document.getElementById("debug-webcam");
-  const placeholder = document.getElementById("debug-webcam-placeholder");
-  const btnStart    = document.getElementById("btn-start-webcam");
-  const btnStop     = document.getElementById("btn-stop-webcam");
-  const statusEl    = document.getElementById("debug-webcam-status");
-  const camSelect   = document.getElementById("debug-cam-select");
-  const secureCtx   = !!navigator.mediaDevices;
+  const video        = document.getElementById("debug-webcam");
+  const placeholder  = document.getElementById("debug-webcam-placeholder");
+  const btnStart     = document.getElementById("btn-start-webcam");
+  const btnStop      = document.getElementById("btn-stop-webcam");
+  const statusEl     = document.getElementById("debug-webcam-status");
+  const camSelect    = document.getElementById("debug-cam-select");
+  const mirrorCheck  = document.getElementById("debug-mirror-camera");
+  const secureCtx    = !!navigator.mediaDevices;
+
+  function applyMirror() {
+    const m = mirrorCheck.checked ? "scaleX(-1)" : "";
+    video.style.transform = m;
+    skelCanvas && (skelCanvas.style.transform = m);
+  }
+  mirrorCheck.addEventListener("change", applyMirror);
 
   function showInsecureWarning() {
     placeholder.innerHTML =
@@ -225,7 +233,7 @@
 
   async function captureAndAnalyze() {
     if (analyzing || !webcamStream) return;
-    analyzing = true; btnCapture.disabled = true;
+    analyzing = true;
     try {
       captureCanvas.width  = video.videoWidth  || 640;
       captureCanvas.height = video.videoHeight || 480;
@@ -244,7 +252,7 @@
     } catch(e) {
       analysisBody.innerHTML = `<div class="debug-analysis-idle" style="color:#f85149">Network error: ${escHtml(e.message)}</div>`;
       clearSkeleton();
-    } finally { analyzing = false; btnCapture.disabled = false; }
+    } finally { analyzing = false; }
   }
 
   function startAutoTimer() {
@@ -274,6 +282,7 @@
       landmark_score_threshold:           parseFloat(document.getElementById("debug-score-thresh-num").value),
       landmark_thumb_angle:               parseFloat(document.getElementById("debug-thumb-angle-num").value),
       mediapipe_min_detection_confidence: parseFloat(document.getElementById("debug-det-conf-num").value),
+      invert_hand_labels:                 document.getElementById("debug-invert-hand-labels").checked,
     };
     st.textContent = "Saving…"; st.className = "save-status";
     try {
