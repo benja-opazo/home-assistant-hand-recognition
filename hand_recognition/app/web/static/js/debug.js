@@ -152,27 +152,20 @@
   }
 
   function renderAnalysis(json) {
-    if (!json.detections || !json.detections.length) {
-      analysisBody.innerHTML =
-        handCard("Left",  "No hand", 0, "", null, null, null) +
-        handCard("Right", "No hand", 0, "", null, null, null);
-      return;
-    }
-    analysisBody.innerHTML = json.detections.map(d => {
+    const byHand = {};
+    (json.detections || []).forEach(d => { byHand[d.hand.toLowerCase()] = d; });
+
+    analysisBody.innerHTML = ["Left", "Right"].map(label => {
+      const d = byHand[label.toLowerCase()];
+      if (!d) return handCard(label, "No hand", 0, "", null, null, null);
       const rotation = d.rotation_deg !== undefined ? ` · ${d.rotation_deg}°` : "";
       const facing   = d.facing ? ` · ${d.facing === "camera" ? "facing camera" : "facing away"}` : "";
       const gesture  = `${GESTURE_EMOJI[d.gesture] || "?"} ${d.gesture.replace(/_/g," ")}`;
-      return handCard(
-        escHtml(d.hand),
-        gesture,
-        Math.round(d.score * 100),
-        rotation + facing,
-        d.finger_scores,
-        d.all_scores,
-        d.gesture,
-      );
+      return handCard(label, gesture, Math.round(d.score * 100), rotation + facing, d.finger_scores, d.all_scores, d.gesture);
     }).join("");
   }
+
+  renderAnalysis({ detections: [] });
 
   // ── Skeleton overlay ───────────────────────────────────────────
   const skelCanvas = document.getElementById("debug-skeleton");

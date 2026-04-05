@@ -99,8 +99,9 @@ def _finger_scores(hand_landmarks, sigmoid_k: float, thumb_angle_deg: float = 0.
     # negative-x side of the pinky MCP (17) after x_sign normalisation.
     # When the back faces the camera the x-displacement of the thumb tip is
     # mirrored, so we flip the sign of tdx to keep the score correct.
-    palm_facing  = x_sign * (pts[1][0] - pts[17][0]) > 0
-    orient       = 1.0 if palm_facing else -1.0
+    palm_toward_camera = x_sign * (pts[1][0] - pts[17][0]) < 0  # original condition drives orient
+    orient             = 1.0 if palm_toward_camera else -1.0
+    palm_facing        = not palm_toward_camera  # correct display label (was inverted)
     # Thumb: project pip→tip displacement onto the configured opening direction
     thumb_rad    = np.radians(thumb_angle_deg)
     cos_t, sin_t = np.cos(thumb_rad), np.sin(thumb_rad)
