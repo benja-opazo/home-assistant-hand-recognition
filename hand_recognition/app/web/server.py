@@ -32,7 +32,7 @@ class _ReverseProxied:
         return self.app(environ, start_response)
 
 
-def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: SnapshotStore, available_gestures: list[tuple[str, str]] | None = None, recognizer=None, publisher=None) -> Flask:
+def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: SnapshotStore, available_gestures: list[tuple[str, str]] | None = None, recognizer=None, publisher=None, processor=None) -> Flask:
     app = Flask(__name__, template_folder="templates")
     app.wsgi_app = _ReverseProxied(app.wsgi_app)
     app.config["current_config"] = config
@@ -74,12 +74,15 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
 
             str_fields = ["mqtt_host", "mqtt_username", "mqtt_password", "frigate_url",
                           "output_topic_template", "mqtt_topic", "frigate_snapshot_mode",
-                          "recognizer_backend", "gesture_recognizer_model_path"]
+                          "recognizer_backend", "gesture_recognizer_model_path",
+                          "snapshot_mode"]
             int_fields = ["mqtt_port", "web_ui_port", "max_snapshots",
                           "mediapipe_max_num_hands", "mediapipe_model_complexity",
                           "frigate_snapshot_quality", "frigate_snapshot_height",
-                          "frigate_snapshot_crop"]
-            float_fields = ["mediapipe_min_detection_confidence", "landmark_sigmoid_k", "landmark_score_threshold", "landmark_thumb_angle"]
+                          "frigate_snapshot_crop",
+                          "continuous_snapshot_count"]
+            float_fields = ["mediapipe_min_detection_confidence", "landmark_sigmoid_k", "landmark_score_threshold", "landmark_thumb_angle",
+                            "continuous_snapshot_interval"]
             bool_fields  = ["invert_hand_labels"]
 
             for field in bool_fields:
@@ -127,6 +130,9 @@ def create_app(config: dict, log_handler: InMemoryLogHandler, snapshot_store: Sn
 
             if recognizer is not None and hasattr(recognizer, "reload_config"):
                 recognizer.reload_config(cfg)
+
+            if processor is not None and hasattr(processor, "reload_config"):
+                processor.reload_config(cfg)
 
             if "max_snapshots" in data:
                 snapshot_store.update_max(cfg["max_snapshots"])

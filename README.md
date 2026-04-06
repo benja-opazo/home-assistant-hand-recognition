@@ -28,10 +28,21 @@ The web UI has five tabs:
 | Tab | Purpose |
 |-----|---------|
 | Snapshots | Grid of captured snapshots with gesture and camera filters. Supports single download/delete per card, and multi-select for bulk delete or ZIP download. |
-| Connections | MQTT broker credentials, Frigate URL, snapshot mode (event vs. latest frame), and output topic template. |
-| Detection | MQTT topic to subscribe to, plus configurable message filters (property, comparator, value) for routing events. |
+| Connections | MQTT broker credentials, Frigate URL, snapshot source (event vs. latest frame), image settings, and output topic template. |
+| Detection | MQTT topic to subscribe to, configurable message filters (property, comparator, value), and snapshot capture mode (Normal or Continuous). |
 | MediaPipe | Toggle individual gestures on/off, select the recognition backend (Landmarks or GestureRecognizer), and adjust model settings (confidence threshold, max hands, model complexity, scoring parameters). |
 | Logs | Live log stream with level and source filters, pause, clear, and download. |
+
+### Snapshot Modes
+
+The **Detection** tab lets you choose between two snapshot capture modes:
+
+| Mode | Behaviour |
+|------|-----------|
+| **Normal** (default) | One snapshot is taken per MQTT event that passes the filters. Hand recognition runs once and the result is published immediately. |
+| **Continuous** | When an event arrives a burst of *n* snapshots is taken, spaced *t* seconds apart. Each snapshot is processed and published independently. Any new MQTT event that arrives while the burst is still running is silently ignored — the burst completes before the next event can trigger a new one. |
+
+The burst size (*n*, default 5) and interval (*t*, default 5 s) are configurable in the Detection tab. Changes take effect immediately without a restart.
 
 The default configuration should work out of the box, except for the MQTT credentials that have to be configured.
 
@@ -42,12 +53,19 @@ When a gesture is detected, the add-on publishes to the configured topic (defaul
 ```json
 {
   "camera": "front_door",
-  "left":  { "gesture": "open_palm", "score": 0.97 },
-  "right": { "gesture": "unknown",   "score": 0 }
+  "left":  { "gesture": "open_palm", "score": 0.97, "facing": "camera", "rotation_deg": -12.3 },
+  "right": { "gesture": "unknown",   "score": 0,    "facing": "unknown", "rotation_deg": null }
 }
 ```
 
-A message is always published for every processed snapshot. When a hand is not detected its entry contains `"gesture": "unknown"` and `"score": 0`.
+A message is always published for every processed snapshot. When a hand is not detected its entry contains `"gesture": "unknown"`, `"score": 0`, and `"rotation_deg": null`.
+
+| Field | Description |
+|-------|-------------|
+| `gesture` | Recognized gesture name, or `"unknown"` if no match above threshold. |
+| `score` | Match confidence (0 – 1). |
+| `facing` | `"camera"` if the palm faces the lens, `"away"` if the back of the hand does, `"unknown"` if no hand was detected. |
+| `rotation_deg` | Palm rotation in degrees (–180 to 180, 0 = upright). `null` when no hand is detected. |
 
 ## Recognition Backends
 

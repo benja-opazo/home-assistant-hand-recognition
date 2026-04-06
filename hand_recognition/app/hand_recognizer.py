@@ -251,7 +251,7 @@ class HandRecognizer:
             hand_label                     = "Left" if raw_label == "Right" else "Right"
             if self._invert_hand_labels:
                 hand_label = "Right" if hand_label == "Left" else "Left"
-            scores, _, palm_facing         = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
+            scores, angle_deg, palm_facing = _finger_scores(hand_landmarks, self._sigmoid_k, self._thumb_angle, hand_label)
             gesture, confidence            = _match_gesture(scores, self._score_threshold)
 
             if gesture != "unknown" and gesture not in self._enabled:
@@ -260,10 +260,11 @@ class HandRecognizer:
                 )
                 continue
             detections.append({
-                "gesture": gesture,
-                "score":   confidence,
-                "hand":    hand_label,
-                "facing":  "camera" if palm_facing else "away",
+                "gesture":      gesture,
+                "score":        confidence,
+                "hand":         hand_label,
+                "facing":       "camera" if palm_facing else "away",
+                "rotation_deg": angle_deg,
             })
             logger.debug("Detected %s hand: %s (score=%.3f)", hand_label, gesture, confidence)
 

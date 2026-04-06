@@ -44,6 +44,14 @@ enabled_gestures:
   - call_me
   - pinky
   - three_fingers
+# Snapshot capture mode:
+#   normal     — one snapshot per MQTT event (default)
+#   continuous — n snapshots spaced t seconds apart per event;
+#                a second event arriving while the burst is still running is ignored
+snapshot_mode: "normal"
+continuous_snapshot_count: 5
+continuous_snapshot_interval: 5
+
 mqtt_topic: "frigate/events"
 topic_filters:
   - property: "type"

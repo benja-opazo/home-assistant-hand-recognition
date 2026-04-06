@@ -97,10 +97,36 @@ document.getElementById("btn-reset-filters").addEventListener("click", () => {
   renderDefaultFiltersForTopic(getSelectedTopic());
 });
 
+function getSnapshotMode() {
+  const checked = document.querySelector("input[name='snapshot_mode']:checked");
+  return checked ? checked.value : "normal";
+}
+
+function updateContinuousSettingsVisibility() {
+  const isContinuous = getSnapshotMode() === "continuous";
+  document.getElementById("continuous-settings").style.display = isContinuous ? "block" : "none";
+  document.querySelectorAll("#snapshot-mode-options .topic-option").forEach(opt => {
+    opt.classList.toggle("selected", opt.querySelector("input[type=radio]").checked);
+  });
+}
+
+document.querySelectorAll("input[name='snapshot_mode']").forEach(r => {
+  r.addEventListener("change", updateContinuousSettingsVisibility);
+});
+
 document.getElementById("detection-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const status = document.getElementById("detection-status");
-  const payload = { mqtt_topic: getSelectedTopic(), topic_filters: collectFilters() };
+  const snapshotMode = getSnapshotMode();
+  const payload = {
+    mqtt_topic:    getSelectedTopic(),
+    topic_filters: collectFilters(),
+    snapshot_mode: snapshotMode,
+    ...(snapshotMode === "continuous" ? {
+      continuous_snapshot_count:    parseInt(document.getElementById("continuous_snapshot_count").value, 10),
+      continuous_snapshot_interval: parseFloat(document.getElementById("continuous_snapshot_interval").value),
+    } : {}),
+  };
   status.textContent = "Saving…"; status.className = "save-status";
   try {
     const res  = await fetch(URL_CONFIG, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
@@ -112,3 +138,4 @@ document.getElementById("detection-form").addEventListener("submit", async (e) =
 
 initTopicRadios();
 renderFilters(INIT_FILTERS);
+updateContinuousSettingsVisibility();

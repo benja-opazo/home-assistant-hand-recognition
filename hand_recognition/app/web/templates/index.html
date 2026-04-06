@@ -208,6 +208,47 @@
         </div>
         <div id="filters-list"></div>
 
+        <p class="section-title">Snapshot Mode</p>
+        <div class="topic-options" id="snapshot-mode-options">
+          <label class="topic-option">
+            <div class="topic-option-header">
+              <input type="radio" name="snapshot_mode" value="normal"
+                {{ 'checked' if (config.snapshot_mode | default('normal')) == 'normal' else '' }} />
+              <span class="topic-option-name">Normal</span>
+            </div>
+            <div class="topic-option-desc">
+              Takes a single snapshot each time an MQTT event passes the filters and runs hand recognition on it.
+            </div>
+          </label>
+          <label class="topic-option">
+            <div class="topic-option-header">
+              <input type="radio" name="snapshot_mode" value="continuous"
+                {{ 'checked' if (config.snapshot_mode | default('normal')) == 'continuous' else '' }} />
+              <span class="topic-option-name">Continuous</span>
+            </div>
+            <div class="topic-option-desc">
+              Takes a burst of <em>n</em> snapshots spaced <em>t</em> seconds apart when an event arrives.
+              Any new event that arrives while the burst is still running is ignored.
+              Useful when the gesture may only be held for a short time or when timing is uncertain.
+            </div>
+          </label>
+        </div>
+
+        <div id="continuous-settings" style="display:none;margin-top:.75rem">
+          <div class="field">
+            <label for="continuous_snapshot_count">Number of snapshots (n)</label>
+            <input id="continuous_snapshot_count" name="continuous_snapshot_count" type="number" min="2" max="60"
+              value="{{ config.continuous_snapshot_count | default(5) }}" />
+            <span class="hint">How many snapshots to take per event burst (2 – 60).</span>
+          </div>
+          <div class="field">
+            <label for="continuous_snapshot_interval">Interval between snapshots in seconds (t)</label>
+            <input id="continuous_snapshot_interval" name="continuous_snapshot_interval" type="number" min="1" max="300" step="1"
+              value="{{ config.continuous_snapshot_interval | default(5) }}" />
+            <span class="hint">Seconds to wait between each snapshot in the burst (1 – 300).</span>
+          </div>
+        </div>
+
         <button type="submit" class="primary">Save detection configuration</button>
         <p class="save-status" id="detection-status"></p>
       </form>
@@ -625,10 +666,13 @@
     const URL_GESTURE_MODEL_STATUS   = {{ url_for('gesture_model_status')   | tojson }};
     const URL_GESTURE_MODEL_DOWNLOAD = {{ url_for('download_gesture_model') | tojson }};
 
-    const INIT_TOPIC   = {{ (config.mqtt_topic   | default('frigate/events')) | tojson }};
-    const INIT_FILTERS = {{ (config.topic_filters | default([])) | tojson }};
-    const ALL_GESTURES = {{ available_gestures | tojson }};
-    const INIT_ENABLED = new Set({{ (config.enabled_gestures | default([])) | tojson }});
+    const INIT_TOPIC               = {{ (config.mqtt_topic                   | default('frigate/events')) | tojson }};
+    const INIT_FILTERS             = {{ (config.topic_filters                | default([])) | tojson }};
+    const ALL_GESTURES             = {{ available_gestures | tojson }};
+    const INIT_ENABLED             = new Set({{ (config.enabled_gestures     | default([])) | tojson }});
+    const INIT_SNAPSHOT_MODE       = {{ (config.snapshot_mode               | default('normal')) | tojson }};
+    const INIT_CONTINUOUS_COUNT    = {{ (config.continuous_snapshot_count   | default(5))       | tojson }};
+    const INIT_CONTINUOUS_INTERVAL = {{ (config.continuous_snapshot_interval| default(5))       | tojson }};
   </script>
 
   <!-- ── Application scripts ─────────────────────────────────────── -->
