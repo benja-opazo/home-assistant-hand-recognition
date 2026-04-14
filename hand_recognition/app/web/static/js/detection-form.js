@@ -138,4 +138,8 @@ document.getElementById("detection-form").addEventListener("submit", async (e) =
 
 initTopicRadios();
 renderFilters(INIT_FILTERS);
+// Ensure radio and panel reflect server-side config (guard against stale browser state)
+document.querySelectorAll("input[name='snapshot_mode']").forEach(r => {
+  r.checked = (r.value === INIT_SNAPSHOT_MODE);
+});
 updateContinuousSettingsVisibility();

@@ -234,7 +234,7 @@
           </label>
         </div>
 
-        <div id="continuous-settings" style="display:none;margin-top:.75rem">
+        <div id="continuous-settings" style="{{ 'display:block' if (config.snapshot_mode | default('normal')) == 'continuous' else 'display:none' }};margin-top:.75rem">
           <div class="field">
             <label for="continuous_snapshot_count">Number of snapshots (n)</label>
             <input id="continuous_snapshot_count" name="continuous_snapshot_count" type="number" min="2" max="60"
